@@ -178,12 +178,13 @@ export default function LoginUser() {
                 {/* Link Daftar Anggota Baru */}
                 <div className="text-center text-xs sm:text-sm text-slate-700 pt-1">
                     Belum menjadi anggota?{' '}
-                    <a
-                        href="#register"
-                        className="font-bold text-[#032360] hover:underline"
+                    <button
+                        type="button"
+                        onClick={() => navigate('/register')}
+                        className="font-bold text-[#032360] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
                     >
                         Daftar Anggota Baru
-                    </a>
+                    </button>
                 </div>
 
                 {/* Social Login dengan Google */}

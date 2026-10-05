@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute'
 import LoginUser from './pages/LoginUser'
+import RegisterUser from './pages/RegisterUser'
 import Dashboard from './pages/Dashboard'
 
 export default function App() {
@@ -9,6 +10,10 @@ export default function App() {
       {/* Public Login Routes */}
       <Route path="/login" element={<LoginUser />} />
       <Route path="/login-user" element={<LoginUser />} />
+
+      {/* Public Register Routes */}
+      <Route path="/register" element={<RegisterUser />} />
+      <Route path="/register-user" element={<RegisterUser />} />
 
       {/* Protected Routes using PrivateRoute */}
       <Route
