@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute'
 import LoginUser from './pages/LoginUser'
 import RegisterUser from './pages/RegisterUser'
+import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 
 export default function App() {
@@ -14,6 +15,10 @@ export default function App() {
       {/* Public Register Routes */}
       <Route path="/register" element={<RegisterUser />} />
       <Route path="/register-user" element={<RegisterUser />} />
+
+      {/* Form Data Diri Route */}
+      <Route path="/form-data-diri" element={<FormDataDiri />} />
+      <Route path="/data-diri" element={<FormDataDiri />} />
 
       {/* Protected Routes using PrivateRoute */}
       <Route
