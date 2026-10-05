@@ -18,9 +18,9 @@ export default function RegisterUser() {
             alert('Password dan Konfirmasi Password tidak cocok!')
             return
         }
-        // Proceed to next step or submit register
+        // Proceed to next step: form data diri
         console.log('Register data:', { email, password })
-        navigate('/login')
+        navigate('/form-data-diri')
     }
 
     const handleBack = () => {
