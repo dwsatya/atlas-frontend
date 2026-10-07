@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { fetchProfile } from '../../services/api'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
+import KtaCard, { KtaFront, KtaBack } from '../../components/KtaCard'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -12,6 +13,7 @@ export default function Profile() {
   const [profileData, setProfileData] = useState(user || null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showPrintModal, setShowPrintModal] = useState(false)
 
   useEffect(() => {
     async function loadLatestProfile() {
@@ -160,155 +162,16 @@ export default function Profile() {
 
         {/* 3. Kartu Tanda Anggota Digital (Digital Library Card) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT: Kartu Anggota Visual (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="text-sm font-bold text-[#032360] flex items-center justify-between">
-              <span>Kartu Anggota Digital (KTA)</span>
-              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                ✓ Aktif
-              </span>
-            </div>
-
-            {/* Smart Library Card Graphic */}
-            <div className="relative rounded-3xl p-6 sm:p-7 text-white shadow-2xl overflow-hidden bg-gradient-to-br from-[#001D48] via-[#002B66] to-[#0A3D8F] border border-blue-400/20">
-              {/* Decorative Background Elements */}
-              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
-              <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-
-              {/* Card Header */}
-              <div className="relative z-10 flex items-center justify-between border-b border-white/15 pb-4">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={logo}
-                    alt="ATLAS Emblem"
-                    className="h-10 w-10 object-contain drop-shadow"
-                  />
-                  <div>
-                    <h3 className="text-[11px] font-extrabold tracking-wider uppercase text-blue-200 leading-tight">
-                      Perpustakaan Daerah
-                    </h3>
-                    <p className="text-[9px] font-medium text-slate-300">
-                      Kabupaten Buleleng — ATLAS
-                    </p>
-                  </div>
-                </div>
-
-                {/* RFID / Smart Chip Icon */}
-                <div className="w-8 h-6 rounded-md bg-amber-400/80 border border-amber-300 shadow-inner flex items-center justify-center opacity-90">
-                  <div className="w-4 h-3 border border-amber-600/40 rounded-sm" />
-                </div>
-              </div>
-
-              {/* Card Body: Photo & Member Details */}
-              <div className="relative z-10 mt-5 flex items-start gap-4">
-                {/* Photo Container */}
-                <div className="w-20 h-26 sm:w-24 sm:h-30 rounded-2xl bg-white/10 border-2 border-white/40 overflow-hidden shrink-0 shadow-md">
-                  {photo ? (
-                    <img
-                      src={photo}
-                      alt={name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none'
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-white/60 p-2 text-center text-[10px]">
-                      <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      <span>Pasfoto</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                    {jobCategory}
-                  </span>
-
-                  <h2 className="text-base sm:text-lg font-extrabold text-white leading-tight truncate" title={name}>
-                    {name}
-                  </h2>
-
-                  <p className="text-xs text-blue-200 truncate font-medium" title={institution}>
-                    {institution !== '-' ? institution : 'Anggota Perpustakaan'}
-                  </p>
-
-                  <div className="pt-2">
-                    <span className="block text-[10px] text-slate-400 font-semibold">Nomor Anggota:</span>
-                    <span className="font-mono text-xs sm:text-sm font-extrabold text-white tracking-wider">
-                      {memberNo}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Footer: Barcode Simulation & Validity */}
-              <div className="relative z-10 mt-5 pt-3.5 border-t border-white/15 flex items-end justify-between text-[10px]">
-                <div>
-                  <span className="block text-slate-400">Masa Berlaku</span>
-                  <span className="font-bold text-white">Seumur Hidup / Aktif</span>
-                </div>
-
-                {/* Simulated Barcode */}
-                <div className="flex flex-col items-end space-y-1">
-                  <div className="flex items-center gap-[2px] h-5 opacity-80">
-                    {[3, 1, 4, 1, 2, 5, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3, 2, 1, 4].map((w, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-white rounded-sm h-full"
-                        style={{ width: `${w}px` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="font-mono text-[9px] text-slate-400">{memberNo}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions for Member Card */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleCopyMemberNo(memberNo)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              >
-                <svg className="w-4 h-4 text-[#002B66]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                <span>{copied ? 'Tersalin ke Clipboard!' : 'Salin Nomor Anggota'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="py-2.5 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                title="Cetak Kartu Anggota"
-              >
-                <svg className="w-4 h-4 text-[#002B66]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                  />
-                </svg>
-                <span>Cetak</span>
-              </button>
-            </div>
+          {/* LEFT: Kartu Anggota Visual & Interaktif KTA (5 cols) */}
+          <div className="lg:col-span-5">
+            <KtaCard
+              memberNo={memberNo}
+              name={name}
+              photo={photo}
+              createdAt={profileData?.created_at}
+              locationName="Perpustakaan Daerah"
+              onPrint={() => setShowPrintModal(true)}
+            />
           </div>
 
           {/* RIGHT: Detail Biodata & Info Anggota (7 cols) */}
@@ -446,6 +309,256 @@ export default function Profile() {
           </button>
         </div>
       </footer>
+
+      {/* 5. Modal Preview & Cetak KTA */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-[#002B66] text-white flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg">Pratinjau Cetak KTA</h3>
+                  <p className="text-xs text-blue-200">Kartu Tanda Anggota Perpustakaan Daerah Buleleng</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 space-y-6 max-h-[75vh] overflow-y-auto">
+              {/* Pratinjau 2 Sisi (Depan & Belakang) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#002B66]" />
+                    <span>Sisi Depan (Identitas & Barcode)</span>
+                  </span>
+                  <div className="rounded-2xl overflow-hidden border border-slate-300 shadow-md">
+                    <KtaFront
+                      memberNo={memberNo}
+                      name={name}
+                      photo={photo}
+                      createdAt={profileData?.created_at}
+                      locationName="Perpustakaan Daerah"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-400" />
+                    <span>Sisi Belakang (Tata Tertib)</span>
+                  </span>
+                  <div className="rounded-2xl overflow-hidden border border-slate-300 shadow-md">
+                    <KtaBack />
+                  </div>
+                </div>
+              </div>
+
+              {/* Informasi & Panduan Cetak */}
+              <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-4 space-y-2 text-xs text-amber-900">
+                <div className="font-bold flex items-center gap-2 text-amber-950">
+                  <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Petunjuk Pencetakan KTA:</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-slate-700 text-[11px] leading-relaxed">
+                  <li>
+                    Ukuran kartu dirancang sesuai standar internasional <strong>ID-1 / CR-80</strong> (85.6 mm × 54.0 mm).
+                  </li>
+                  <li>
+                    Disarankan mencetak menggunakan bahan <strong>PVC Card</strong> atau kertas tebal / Art Paper (260 - 310 gsm).
+                  </li>
+                  <li>
+                    Pada jendela cetak peramban (browser), pastikan opsi <strong>"Background graphics / Grafik latar belakang"</strong> tercentang dan skala diatur ke <strong>100% / Default</strong>.
+                  </li>
+                  <li>
+                    Anda juga dapat memilih tujuan <strong>"Save as PDF / Simpan sebagai PDF"</strong> untuk mengunduh dokumen KTA digital ke perangkat Anda.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.print()
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                  />
+                </svg>
+                <span>Cetak Sekarang (Print / PDF)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Lembar Cetak Khusus (@media print) */}
+      <div id="kta-print-sheet" className="hidden">
+        <div className="print-content-wrapper">
+          <div className="print-header">
+            <h1 className="print-title">KARTU TANDA ANGGOTA PERPUSTAKAAN</h1>
+            <p className="print-subtitle">DINAS ARSIP DAN PERPUSTAKAAN DAERAH KABUPATEN BULELENG</p>
+          </div>
+
+          <div className="print-cards-grid">
+            <div className="print-card-item">
+              <span className="print-card-label">TAMPAK DEPAN</span>
+              <div className="print-card-box">
+                <KtaFront
+                  memberNo={memberNo}
+                  name={name}
+                  photo={photo}
+                  createdAt={profileData?.created_at}
+                  locationName="Perpustakaan Daerah"
+                />
+              </div>
+            </div>
+
+            <div className="print-card-item">
+              <span className="print-card-label">TAMPAK BELAKANG</span>
+              <div className="print-card-box">
+                <KtaBack />
+              </div>
+            </div>
+          </div>
+
+          <div className="print-footer">
+            <p>Portal Resmi Perpustakaan Daerah Kabupaten Buleleng (ATLAS) • #{memberNo} • {name}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Global CSS Khusus Pencetakan */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+          body {
+            background: white !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          #kta-print-sheet,
+          #kta-print-sheet * {
+            visibility: visible !important;
+          }
+          #kta-print-sheet {
+            display: block !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 10mm !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-content-wrapper {
+            max-width: 190mm;
+            margin: 0 auto;
+            text-align: center;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+          }
+          .print-header {
+            margin-bottom: 8mm;
+            border-bottom: 2px solid #002B66;
+            padding-bottom: 4mm;
+          }
+          .print-title {
+            font-size: 16pt;
+            font-weight: 800;
+            color: #002B66;
+            margin: 0;
+            letter-spacing: 0.5px;
+          }
+          .print-subtitle {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #475569;
+            margin: 2mm 0 0 0;
+          }
+          .print-cards-grid {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10mm;
+            margin: 8mm 0;
+          }
+          .print-card-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .print-card-label {
+            font-size: 8pt;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 3mm;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .print-card-box {
+            width: 85.6mm;
+            height: 54.2mm;
+            border-radius: 3.18mm;
+            overflow: hidden;
+            border: 0.5pt solid #cbd5e1;
+            box-shadow: none;
+          }
+          .print-footer {
+            margin-top: 10mm;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 4mm;
+            font-size: 8pt;
+            color: #64748b;
+          }
+        }
+      `}</style>
     </div>
   )
 }
