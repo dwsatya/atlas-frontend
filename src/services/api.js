@@ -48,50 +48,7 @@ export async function fetchBookById(id) {
   }
 }
 
-export async function registerMember(formDataOrData) {
-  const url = `${API_BASE_URL}/auth/member/register`
-
-  let body
-  const headers = {
-    Accept: 'application/json',
-  }
-
-  if (formDataOrData instanceof FormData) {
-    body = formDataOrData
-    // Browser sets multipart/form-data boundary automatically, don't set Content-Type header
-  } else {
-    headers['Content-Type'] = 'application/json'
-    body = JSON.stringify(formDataOrData)
-  }
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body,
-    })
-
-    const result = await response.json().catch(() => null)
-
-    if (!response.ok) {
-      const errorMessage =
-        result?.message ||
-        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
-        `Registrasi gagal (Status: ${response.status})`
-      const error = new Error(errorMessage)
-      error.status = response.status
-      error.data = result
-      throw error
-    }
-
-    return result
-  } catch (error) {
-    console.error('API Error registerMember:', error)
-    throw error
-  }
-}
-
-export async function loginMember({ email, password }) {
+export async function loginUser({ email, password }) {
   const url = `${API_BASE_URL}/auth/member/login`
 
   try {

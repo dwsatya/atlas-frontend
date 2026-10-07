@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { loginMember } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
+import { loginUser, getGoogleLoginUrl } from '../../services/api'
 
 export default function LoginUser() {
     const navigate = useNavigate()
@@ -14,25 +15,23 @@ export default function LoginUser() {
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [errorMessage, setErrorMessage] = useState(null)
+    const [errorMessage, setErrorMessage] = useState('')
 
-    // Handle Google OAuth callback params if redirected from Laravel backend
+    // Handle Google OAuth Callback params on redirect
     useEffect(() => {
-        const error = searchParams.get('error')
-        if (error) {
-            setErrorMessage(decodeURIComponent(error))
-            return
-        }
-
-        const token = searchParams.get('token')
+        const tokenParam = searchParams.get('token')
         const userParam = searchParams.get('user')
-        if (token && userParam) {
+        const errorParam = searchParams.get('error')
+
+        if (errorParam) {
+            setErrorMessage(decodeURIComponent(errorParam))
+        } else if (tokenParam && userParam) {
             try {
                 const parsedUser = JSON.parse(decodeURIComponent(userParam))
-                login(parsedUser, token)
+                login(parsedUser, tokenParam)
                 navigate('/dashboard', { replace: true })
-            } catch (e) {
-                console.error('Failed to parse Google OAuth user param:', e)
+            } catch (err) {
+                console.error('Failed to parse Google user parameter:', err)
             }
         }
     }, [searchParams, login, navigate])
@@ -279,6 +278,7 @@ export default function LoginUser() {
                         }}
                         className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Masuk dengan Google"
+                        title="Masuk dengan Akun Google"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path

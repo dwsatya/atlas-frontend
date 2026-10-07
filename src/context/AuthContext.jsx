@@ -12,27 +12,25 @@ export function AuthProvider({ children }) {
     }
   })
 
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem('atlas_token') || null
-  })
+  const [token, setToken] = useState(() => localStorage.getItem('atlas_token') || null)
 
-  const login = (userOrUsername = 'User ATLAS', authToken = null) => {
-    let userData
-    if (typeof userOrUsername === 'string') {
-      userData = {
-        name: userOrUsername,
-        email: `${userOrUsername.toLowerCase().replace(/\s+/g, '')}@atlas.dev`,
+  const login = (userData, userToken = null) => {
+    let finalUser = {}
+    if (typeof userData === 'string') {
+      finalUser = {
+        name: userData,
+        email: `${userData.toLowerCase().replace(/\s+/g, '')}@atlas.dev`,
       }
-    } else {
-      userData = userOrUsername
+    } else if (typeof userData === 'object' && userData !== null) {
+      finalUser = { ...userData }
     }
 
-    setUser(userData)
-    localStorage.setItem('atlas_user', JSON.stringify(userData))
+    setUser(finalUser)
+    localStorage.setItem('atlas_user', JSON.stringify(finalUser))
 
-    if (authToken) {
-      setToken(authToken)
-      localStorage.setItem('atlas_token', authToken)
+    if (userToken) {
+      setToken(userToken)
+      localStorage.setItem('atlas_token', userToken)
     }
   }
 

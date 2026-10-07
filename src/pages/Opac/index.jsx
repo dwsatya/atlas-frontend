@@ -511,6 +511,7 @@ export default function OpacPage() {
                       {/* Button Lihat Detail */}
                       <button
                         type="button"
+                        onClick={() => navigate(`/books/${book.id}`)}
                         className="mt-3.5 w-full py-1.5 rounded-full border border-indigo-500/40 text-indigo-700 hover:bg-indigo-50 font-bold text-xs transition-all cursor-pointer text-center active:scale-95"
                       >
                         Lihat Detail
