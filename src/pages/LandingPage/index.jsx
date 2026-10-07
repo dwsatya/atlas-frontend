@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import background2 from '../../assets/background2.jpeg'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
+import { fetchBooks } from '../../services/api'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -15,10 +16,43 @@ export default function LandingPage() {
   const [filterTahun, setFilterTahun] = useState('')
   const [filterBahan, setFilterBahan] = useState('Semua Jenis Bahan')
 
-  const books = Array(8).fill({
-    title: 'Bahasa Indonesia',
-    author: 'Dewa Satya, dkk',
-  })
+  const [books, setBooks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [totalCount, setTotalCount] = useState(null)
+
+  const loadBooks = useCallback(async (keyword = '') => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetchBooks({ search: keyword, page: 1 })
+      const bookList = res?.data?.data || res?.data || []
+      setBooks(bookList.slice(0, 8)) // Ambil 8 buku terbaru untuk Landing Page
+      if (res?.data?.meta?.total !== undefined) {
+        setTotalCount(res.data.meta.total)
+      } else if (Array.isArray(bookList)) {
+        setTotalCount(bookList.length)
+      }
+    } catch (err) {
+      console.error('Failed to load books:', err)
+      setError('Gagal memuat data buku dari server.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadBooks()
+  }, [loadBooks])
+
+  const handleSearch = (e) => {
+    e?.preventDefault()
+    if (searchKeyword.trim()) {
+      navigate(`/opac?search=${encodeURIComponent(searchKeyword.trim())}`)
+    } else {
+      loadBooks()
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-500 selection:text-white">
@@ -103,7 +137,7 @@ export default function LandingPage() {
       <section className="relative z-20 -mt-14 sm:-mt-20 max-w-5xl mx-auto px-4">
         <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-5 sm:p-7 space-y-4">
           {/* Top Search Input Bar */}
-          <div className="flex flex-col md:flex-row items-center gap-3">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center gap-3">
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -131,7 +165,7 @@ export default function LandingPage() {
             </div>
 
             <button
-              type="button"
+              type="submit"
               className="w-full md:w-auto px-7 py-3 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
             >
               <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +173,7 @@ export default function LandingPage() {
               </svg>
               <span>Cari Katalog</span>
             </button>
-          </div>
+          </form>
 
           {/* Bottom Filter Controls */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
@@ -202,7 +236,9 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
                   <span className="block text-[11px] font-semibold text-slate-500">Koleksi Buku</span>
-                  <span className="block text-xl font-extrabold text-[#032360] mt-1">3.482</span>
+                  <span className="block text-xl font-extrabold text-[#032360] mt-1">
+                    {totalCount !== null ? totalCount.toLocaleString('id-ID') : '3.482'}
+                  </span>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
                   <span className="block text-[11px] font-semibold text-slate-500">Buku Dipinjam</span>
@@ -347,40 +383,104 @@ export default function LandingPage() {
             </div>
 
             {/* 8 Book Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {books.map((book, index) => (
-                <div
-                  key={index}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Placeholder Cover */}
-                    <div className="w-full h-44 rounded-xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400 font-medium text-xs leading-snug">
-                      <span>Cover Buku</span>
-                      <span>Tidak</span>
-                      <span>Ditemukan</span>
-                    </div>
-
-                    {/* Book Metadata */}
-                    <div className="mt-3">
-                      <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-1">
-                        {book.title}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
-                        {book.author}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="mt-3.5 w-full py-1.5 rounded-full border border-indigo-500/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold transition-all cursor-pointer text-center"
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm flex flex-col justify-between animate-pulse"
                   >
-                    Lihat Detail
-                  </button>
+                    <div>
+                      <div className="w-full h-44 rounded-xl bg-slate-200" />
+                      <div className="mt-3 space-y-2">
+                        <div className="h-4 bg-slate-200 rounded w-3/4" />
+                        <div className="h-3 bg-slate-200 rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="mt-3.5 h-8 bg-slate-200 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center space-y-3">
+                <p className="text-rose-700 text-sm font-semibold">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => loadBooks()}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            ) : books.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center space-y-2">
+                <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
                 </div>
-              ))}
-            </div>
+                <p className="text-sm font-bold text-slate-700">Belum ada koleksi buku yang tersedia.</p>
+                <p className="text-xs text-slate-500">Silakan tambahkan data buku melalui modul manajemen katalog buku.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {books.map((book) => (
+                  <div
+                    key={book.id || book.title}
+                    className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
+                  >
+                    <div>
+                      {/* Cover Card */}
+                      <div className="w-full h-44 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400 font-medium text-xs leading-snug relative overflow-hidden group-hover:from-indigo-50 group-hover:to-slate-100 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-white/80 shadow-sm flex items-center justify-center text-[#002B66] mb-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
+                        <span className="line-clamp-2 text-[11px] font-semibold text-slate-600 px-1">
+                          {book.title}
+                        </span>
+                      </div>
+
+                      {/* Book Metadata */}
+                      <div className="mt-3">
+                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors" title={book.title}>
+                          {book.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1" title={book.author_main || book.author}>
+                          {book.author_main || book.author || 'Penulis Tidak Diketahui'}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[10px] mt-2.5 pt-2 border-t border-slate-100">
+                          <span
+                            className={`px-2 py-0.5 rounded-md font-semibold ${
+                              (book.available_copies ?? 1) > 0
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-rose-50 text-rose-700'
+                            }`}
+                          >
+                            {(book.available_copies ?? 1) > 0
+                              ? `${book.available_copies ?? 1} Tersedia`
+                              : 'Habis'}
+                          </span>
+                          {book.publish_year && (
+                            <span className="text-slate-400 font-medium">{book.publish_year}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/opac?search=${encodeURIComponent(book.title)}`)}
+                      className="mt-3 w-full py-1.5 rounded-full border border-indigo-500/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold transition-all cursor-pointer text-center active:scale-95"
+                    >
+                      Lihat Detail
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Bottom Banner: Butuh Bantuan Pustakawan? */}
             <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
