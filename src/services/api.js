@@ -55,26 +55,29 @@ export async function loginUser({ email, password }) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, password }),
     })
 
-    const result = await response.json()
+    const result = await response.json().catch(() => null)
 
     if (!response.ok) {
-      throw new Error(result.message || 'Login gagal. Periksa kembali email dan password Anda.')
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Login gagal (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
     }
 
     return result
   } catch (error) {
-    console.error('API Error loginUser:', error)
+    console.error('API Error loginMember:', error)
     throw error
   }
 }
 
-export function getGoogleLoginUrl() {
-  const backendBase = API_BASE_URL.replace(/\/api\/?$/, '')
-  return `${backendBase}/auth/google`
-}

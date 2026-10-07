@@ -14,13 +14,16 @@ export default function RegisterUser() {
     const handleSubmit = (e) => {
         e.preventDefault()
         if (!email || !password) return
+        if (password.length < 6) {
+            alert('Password minimal harus 6 karakter!')
+            return
+        }
         if (password !== confirmPassword) {
             alert('Password dan Konfirmasi Password tidak cocok!')
             return
         }
         // Proceed to next step: form data diri
-        console.log('Register data:', { email, password })
-        navigate('/form-data-diri')
+        navigate('/form-data-diri', { state: { email, password } })
     }
 
     const handleBack = () => {
@@ -230,6 +233,9 @@ export default function RegisterUser() {
                     <span>Atau daftar dengan:</span>
                     <button
                         type="button"
+                        onClick={() => {
+                            window.location.href = 'http://localhost:8000/auth/google'
+                        }}
                         className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Daftar dengan Google"
                     >

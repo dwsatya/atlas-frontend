@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { loginMember } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
 import { loginUser, getGoogleLoginUrl } from '../../services/api'
 
@@ -38,26 +39,22 @@ export default function LoginUser() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!email || !password) return
-
-        setLoading(true)
-        setErrorMessage('')
+        setErrorMessage(null)
 
         try {
-            const res = await loginUser({ email, password })
-            const memberData = res?.data?.member || { email, name: email.split('@')[0] }
-            const tokenData = res?.token || res?.data?.token || null
-
-            login(memberData, tokenData)
-            navigate('/dashboard', { replace: true })
+            setLoading(true)
+            const response = await loginMember({ email, password })
+            if (response?.success) {
+                const memberData = response?.data?.member || { name: email.split('@')[0], email }
+                const token = response?.token || response?.data?.token
+                login(memberData, token)
+                navigate('/dashboard')
+            }
         } catch (err) {
-            setErrorMessage(err.message || 'Login gagal. Email atau password tidak sesuai.')
+            setErrorMessage(err.message || 'Email atau password salah.')
         } finally {
             setLoading(false)
         }
-    }
-
-    const handleGoogleLogin = () => {
-        window.location.href = getGoogleLoginUrl()
     }
 
     const handleBack = () => {
@@ -101,16 +98,23 @@ export default function LoginUser() {
                     Login
                 </h1>
 
+                {/* Error Banner */}
                 {errorMessage && (
-                    <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between">
-                        <span>{errorMessage}</span>
-                        <button
-                            type="button"
-                            onClick={() => setErrorMessage('')}
-                            className="text-rose-500 hover:text-rose-700 font-bold ml-2 cursor-pointer"
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-xs sm:text-sm flex items-start gap-2.5">
+                        <svg
+                            className="w-5 h-5 shrink-0 text-red-500 mt-0.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                         >
-                            ✕
-                        </button>
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                        <span className="leading-relaxed">{errorMessage}</span>
                     </div>
                 )}
 
@@ -151,7 +155,6 @@ export default function LoginUser() {
                                 aria-label="Toggle password visibility"
                             >
                                 {showPassword ? (
-                                    /* Eye Slash Icon */
                                     <svg
                                         className="w-5 h-5"
                                         fill="none"
@@ -172,7 +175,6 @@ export default function LoginUser() {
                                         />
                                     </svg>
                                 ) : (
-                                    /* Eye Icon */
                                     <svg
                                         className="w-5 h-5"
                                         fill="none"
@@ -222,15 +224,34 @@ export default function LoginUser() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
                         >
-                            {loading && (
-                                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                </svg>
+                            {loading ? (
+                                <>
+                                    <svg
+                                        className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v8H4z"
+                                        />
+                                    </svg>
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                <span>Masuk</span>
                             )}
-                            <span>{loading ? 'Memproses...' : 'Masuk'}</span>
                         </button>
                     </div>
                 </form>
@@ -252,8 +273,10 @@ export default function LoginUser() {
                     <span>Atau masuk dengan:</span>
                     <button
                         type="button"
-                        onClick={handleGoogleLogin}
-                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        onClick={() => {
+                            window.location.href = 'http://localhost:8000/auth/google'
+                        }}
+                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Masuk dengan Google"
                         title="Masuk dengan Akun Google"
                     >
