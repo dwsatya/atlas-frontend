@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { loginMember } from '../../services/api'
+import { loginMember, getGoogleLoginUrl } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
-import { loginUser, getGoogleLoginUrl } from '../../services/api'
 
 export default function LoginUser() {
     const navigate = useNavigate()
