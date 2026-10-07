@@ -472,7 +472,7 @@ export default function LandingPage() {
 
                     <button
                       type="button"
-                      onClick={() => navigate(`/opac?search=${encodeURIComponent(book.title)}`)}
+                      onClick={() => navigate(`/books/${book.id}`)}
                       className="mt-3 w-full py-1.5 rounded-full border border-indigo-500/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold transition-all cursor-pointer text-center active:scale-95"
                     >
                       Lihat Detail

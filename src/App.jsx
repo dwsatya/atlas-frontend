@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute'
 import LandingPage from './pages/LandingPage'
 import Opac from './pages/Opac'
+import DetailBuku from './pages/DetailBuku'
 import LoginUser from './pages/LoginUser'
 import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
@@ -17,6 +18,12 @@ export default function App() {
       {/* OPAC / Katalog Route */}
       <Route path="/opac" element={<Opac />} />
       <Route path="/katalog" element={<Opac />} />
+
+      {/* Detail Buku Route */}
+      <Route path="/books/:id" element={<DetailBuku />} />
+      <Route path="/buku/:id" element={<DetailBuku />} />
+      <Route path="/opac/detail/:id" element={<DetailBuku />} />
+      <Route path="/detail-buku/:id" element={<DetailBuku />} />
 
       {/* Public Login Routes */}
       <Route path="/login" element={<LoginUser />} />
