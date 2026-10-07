@@ -1,23 +1,61 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { loginMember } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
 
 export default function LoginUser() {
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { login } = useAuth()
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState(null)
 
-    const handleSubmit = (e) => {
+    // Handle Google OAuth callback params if redirected from Laravel backend
+    useEffect(() => {
+        const error = searchParams.get('error')
+        if (error) {
+            setErrorMessage(decodeURIComponent(error))
+            return
+        }
+
+        const token = searchParams.get('token')
+        const userParam = searchParams.get('user')
+        if (token && userParam) {
+            try {
+                const parsedUser = JSON.parse(decodeURIComponent(userParam))
+                login(parsedUser, token)
+                navigate('/dashboard', { replace: true })
+            } catch (e) {
+                console.error('Failed to parse Google OAuth user param:', e)
+            }
+        }
+    }, [searchParams, login, navigate])
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!email) return
-        // Authenticate user via AuthContext
-        login(email.split('@')[0] || 'User')
-        navigate('/dashboard')
+        if (!email || !password) return
+        setErrorMessage(null)
+
+        try {
+            setLoading(true)
+            const response = await loginMember({ email, password })
+            if (response?.success) {
+                const memberData = response?.data?.member || { name: email.split('@')[0], email }
+                const token = response?.token || response?.data?.token
+                login(memberData, token)
+                navigate('/dashboard')
+            }
+        } catch (err) {
+            setErrorMessage(err.message || 'Email atau password salah.')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleBack = () => {
@@ -61,6 +99,26 @@ export default function LoginUser() {
                     Login
                 </h1>
 
+                {/* Error Banner */}
+                {errorMessage && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-xs sm:text-sm flex items-start gap-2.5">
+                        <svg
+                            className="w-5 h-5 shrink-0 text-red-500 mt-0.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                        <span className="leading-relaxed">{errorMessage}</span>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Email Input */}
                     <div className="space-y-1.5">
@@ -98,7 +156,6 @@ export default function LoginUser() {
                                 aria-label="Toggle password visibility"
                             >
                                 {showPassword ? (
-                                    /* Eye Slash Icon */
                                     <svg
                                         className="w-5 h-5"
                                         fill="none"
@@ -119,7 +176,6 @@ export default function LoginUser() {
                                         />
                                     </svg>
                                 ) : (
-                                    /* Eye Icon */
                                     <svg
                                         className="w-5 h-5"
                                         fill="none"
@@ -168,9 +224,35 @@ export default function LoginUser() {
                     <div className="pt-2">
                         <button
                             type="submit"
-                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] cursor-pointer"
+                            disabled={loading}
+                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
                         >
-                            Masuk
+                            {loading ? (
+                                <>
+                                    <svg
+                                        className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v8H4z"
+                                        />
+                                    </svg>
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                <span>Masuk</span>
+                            )}
                         </button>
                     </div>
                 </form>
@@ -193,8 +275,7 @@ export default function LoginUser() {
                     <button
                         type="button"
                         onClick={() => {
-                            login('User Google')
-                            navigate('/dashboard')
+                            window.location.href = 'http://localhost:8000/auth/google'
                         }}
                         className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Masuk dengan Google"

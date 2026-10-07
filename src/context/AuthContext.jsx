@@ -5,24 +5,48 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('atlas_user')
-    return savedUser ? JSON.parse(savedUser) : null
+    try {
+      return savedUser ? JSON.parse(savedUser) : null
+    } catch {
+      return null
+    }
   })
 
-  const login = (username = 'User ATLAS') => {
-    const userData = { name: username, email: `${username.toLowerCase().replace(/\s+/g, '')}@atlas.dev` }
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem('atlas_token') || null
+  })
+
+  const login = (userOrUsername = 'User ATLAS', authToken = null) => {
+    let userData
+    if (typeof userOrUsername === 'string') {
+      userData = {
+        name: userOrUsername,
+        email: `${userOrUsername.toLowerCase().replace(/\s+/g, '')}@atlas.dev`,
+      }
+    } else {
+      userData = userOrUsername
+    }
+
     setUser(userData)
     localStorage.setItem('atlas_user', JSON.stringify(userData))
+
+    if (authToken) {
+      setToken(authToken)
+      localStorage.setItem('atlas_token', authToken)
+    }
   }
 
   const logout = () => {
     setUser(null)
+    setToken(null)
     localStorage.removeItem('atlas_user')
+    localStorage.removeItem('atlas_token')
   }
 
   const isAuthenticated = !!user
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   )
