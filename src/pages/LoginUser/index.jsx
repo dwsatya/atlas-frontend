@@ -1,23 +1,63 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import background1 from '../../assets/background1.jpeg'
+import { loginUser, getGoogleLoginUrl } from '../../services/api'
 
 export default function LoginUser() {
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { login } = useAuth()
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
 
-    const handleSubmit = (e) => {
+    // Handle Google OAuth Callback params on redirect
+    useEffect(() => {
+        const tokenParam = searchParams.get('token')
+        const userParam = searchParams.get('user')
+        const errorParam = searchParams.get('error')
+
+        if (errorParam) {
+            setErrorMessage(decodeURIComponent(errorParam))
+        } else if (tokenParam && userParam) {
+            try {
+                const parsedUser = JSON.parse(decodeURIComponent(userParam))
+                login(parsedUser, tokenParam)
+                navigate('/dashboard', { replace: true })
+            } catch (err) {
+                console.error('Failed to parse Google user parameter:', err)
+            }
+        }
+    }, [searchParams, login, navigate])
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!email) return
-        // Authenticate user via AuthContext
-        login(email.split('@')[0] || 'User')
-        navigate('/dashboard')
+        if (!email || !password) return
+
+        setLoading(true)
+        setErrorMessage('')
+
+        try {
+            const res = await loginUser({ email, password })
+            const memberData = res?.data?.member || { email, name: email.split('@')[0] }
+            const tokenData = res?.token || res?.data?.token || null
+
+            login(memberData, tokenData)
+            navigate('/dashboard', { replace: true })
+        } catch (err) {
+            setErrorMessage(err.message || 'Login gagal. Email atau password tidak sesuai.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleGoogleLogin = () => {
+        window.location.href = getGoogleLoginUrl()
     }
 
     const handleBack = () => {
@@ -60,6 +100,19 @@ export default function LoginUser() {
                 <h1 className="text-3xl font-extrabold text-center text-[#032360] tracking-tight">
                     Login
                 </h1>
+
+                {errorMessage && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between">
+                        <span>{errorMessage}</span>
+                        <button
+                            type="button"
+                            onClick={() => setErrorMessage('')}
+                            className="text-rose-500 hover:text-rose-700 font-bold ml-2 cursor-pointer"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Email Input */}
@@ -168,9 +221,16 @@ export default function LoginUser() {
                     <div className="pt-2">
                         <button
                             type="submit"
-                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] cursor-pointer"
+                            disabled={loading}
+                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Masuk
+                            {loading && (
+                                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                            )}
+                            <span>{loading ? 'Memproses...' : 'Masuk'}</span>
                         </button>
                     </div>
                 </form>
@@ -192,12 +252,10 @@ export default function LoginUser() {
                     <span>Atau masuk dengan:</span>
                     <button
                         type="button"
-                        onClick={() => {
-                            login('User Google')
-                            navigate('/dashboard')
-                        }}
-                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
+                        onClick={handleGoogleLogin}
+                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
                         aria-label="Masuk dengan Google"
+                        title="Masuk dengan Akun Google"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path

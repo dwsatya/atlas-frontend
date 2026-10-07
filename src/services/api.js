@@ -47,3 +47,34 @@ export async function fetchBookById(id) {
     throw error
   }
 }
+
+export async function loginUser({ email, password }) {
+  const url = `${API_BASE_URL}/auth/member/login`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Login gagal. Periksa kembali email dan password Anda.')
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error loginUser:', error)
+    throw error
+  }
+}
+
+export function getGoogleLoginUrl() {
+  const backendBase = API_BASE_URL.replace(/\/api\/?$/, '')
+  return `${backendBase}/auth/google`
+}
