@@ -38,7 +38,7 @@ export default function LandingPage() {
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <button
               onClick={() => navigate('/')}
-              className="text-white font-bold pb-1 border-b-2 border-cyan-400 cursor-pointer"
+              className="text-white font-bold pb-1 border-b-2 border-whi cursor-pointer"
             >
               Beranda
             </button>
@@ -256,13 +256,6 @@ export default function LandingPage() {
                     <span>Daftar Anggota Baru</span>
                   </button>
                 </div>
-
-                <a
-                  href="#cek-kta"
-                  className="block text-center text-[11px] font-bold text-[#032360] hover:underline pt-1"
-                >
-                  🔍 Sudah mendaftar? Cek Status KTA
-                </a>
               </div>
             </div>
 
@@ -278,35 +271,53 @@ export default function LandingPage() {
               <div className="space-y-2">
                 <a
                   href="#baca-ditempat"
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
+                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5">
-                    <span className="text-indigo-600 font-bold">📖</span>
+                    <div className="w-7 h-7 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
                     <span>Baca Ditempat</span>
                   </div>
-                  <span className="text-slate-400">&rsaquo;</span>
+                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
                 </a>
 
                 <a
                   href="#cek-pengembalian"
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
+                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5">
-                    <span className="text-emerald-600 font-bold">🔄</span>
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                      </svg>
+                    </div>
                     <span>Cek Pengembalian</span>
                   </div>
-                  <span className="text-slate-400">&rsaquo;</span>
+                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
                 </a>
 
                 <a
                   href="#usulan-buku"
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
+                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5">
-                    <span className="text-amber-600 font-bold">📝</span>
+                    <div className="w-7 h-7 rounded-lg bg-amber-100/70 text-amber-600 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                    </div>
                     <span>Usulan Pengadaan Buku</span>
                   </div>
-                  <span className="text-slate-400">&rsaquo;</span>
+                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
                 </a>
               </div>
             </div>
@@ -373,8 +384,10 @@ export default function LandingPage() {
             {/* Bottom Banner: Butuh Bantuan Pustakawan? */}
             <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-xl bg-[#002B66] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-md">
-                  📖
+                <div className="w-11 h-11 rounded-xl bg-[#002B66] text-white flex items-center justify-center shrink-0 shadow-md">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A8.25 8.25 0 0112 3.75 8.25 8.25 0 0121.75 12v.75a3 3 0 01-3 3h-.75a1.5 1.5 0 01-1.5-1.5v-3a1.5 1.5 0 011.5-1.5h1.5A6.75 6.75 0 0012 5.25 6.75 6.75 0 005.25 12h1.5A1.5 1.5 0 018.25 13.5v3A1.5 1.5 0 016.75 18h-.75a3 3 0 01-3-3v-.75zM12 18.75a2.25 2.25 0 002.25-2.25H9.75A2.25 2.25 0 0012 18.75z" />
+                  </svg>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[#032360]">
@@ -386,12 +399,14 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-white border border-indigo-500/40 text-[#032360] font-bold text-xs hover:bg-slate-50 shadow-sm transition-all shrink-0 cursor-pointer"
+              <a
+                href="https://wa.me/6285753341689"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-white border border-indigo-500/40 text-[#032360] font-bold text-xs hover:bg-slate-50 shadow-sm transition-all shrink-0 cursor-pointer inline-flex items-center justify-center gap-2 active:scale-95 text-center"
               >
-                Hubungi Pustakawan
-              </button>
+                <span>Hubungi Pustakawan</span>
+              </a>
             </div>
           </section>
         </div>
