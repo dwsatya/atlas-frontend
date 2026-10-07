@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -14,34 +17,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px] shadow-lg shadow-indigo-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-bold text-transparent bg-clip-text bg-gradient-to-tr from-indigo-400 to-pink-400">
-                A
-              </div>
-            </div>
-            <span className="font-bold text-xl tracking-tight text-white">
-              ATLAS <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Private Area</span>
-            </span>
-          </div>
+      {/* Top Navbar Terpadu */}
+      <Navbar />
 
-          <div className="flex items-center space-x-4">
-            <div className="text-right hidden sm:block">
-              <div className="text-sm font-semibold text-slate-200">{user?.name}</div>
-              <div className="text-xs text-slate-400">{user?.email}</div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Protected Dashboard Content */}
       <main className="max-w-6xl mx-auto px-6 py-12 flex-1 w-full space-y-10">
@@ -111,9 +89,8 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        ATLAS Frontend — Private Route Integration
-      </footer>
+      {/* Footer Terpadu */}
+      <Footer />
     </div>
   )
 }
