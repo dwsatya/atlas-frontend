@@ -236,10 +236,10 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-500 selection:text-white flex flex-col justify-between">
-      {/* 1. Header / Navbar */}
+      {/* 1. Header / Navbar (Sama persis seperti Landing Page) */}
       <header className="bg-[#00255c] text-white sticky top-0 z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          {/* Logo Container */}
+          {/* Top-Left Logo Container */}
           <div
             className="bg-white rounded-2xl px-4 py-2 flex items-center shadow-md cursor-pointer"
             onClick={() => navigate('/')}
@@ -261,28 +261,92 @@ export default function Profile() {
             >
               OPAC / Katalog
             </button>
-
-            {/* Profile Active Badge */}
-            <div className="bg-white/10 border border-white/20 text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Profil Saya</span>
+            <div className="relative group cursor-pointer hidden sm:flex items-center gap-1 text-white/80 hover:text-white transition-colors">
+              <span>Layanan Mandiri</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
 
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="bg-rose-500/20 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-400/30 px-4 py-2 rounded-full font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span>Keluar</span>
-            </button>
+            {/* Login / Profile Pill Button (Identik seperti Landing Page) */}
+            {isAuthenticated || user ? (
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => navigate('/profile')}
+                  className="bg-white hover:bg-slate-100 text-[#002B66] px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  title="Lihat Profil Anggota"
+                >
+                  {photo ? (
+                    <img
+                      src={photo}
+                      alt={user?.name || name || 'User'}
+                      className="w-5 h-5 rounded-full object-cover shrink-0"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                      />
+                    </svg>
+                  )}
+                  <span className="max-w-[130px] truncate">
+                    {user?.name ? user.name.split(' ')[0] : name ? name.split(' ')[0] : 'Profile'}
+                  </span>
+                  <svg className="w-3.5 h-3.5 text-slate-500 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu Saat Hover */}
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 hidden group-hover:block transition-all z-50">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-800 truncate">{name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono">{memberNo}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/profile')}
+                    className="w-full px-4 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-[#002B66]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Profil Saya</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Keluar (Logout)</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="bg-white hover:bg-slate-100 text-[#002B66] px-5 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                  />
+                </svg>
+                <span>Login</span>
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -322,6 +386,23 @@ export default function Profile() {
                 />
               </svg>
               <span>Cari Buku di OPAC</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-4 py-2.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Keluar dari akun Anda"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span>Keluar</span>
             </button>
           </div>
         </div>
@@ -781,16 +862,69 @@ export default function Profile() {
         </div>
       </main>
 
-      {/* 4. Footer */}
-      <footer className="bg-[#001D48] text-white py-6 border-t border-[#001738] mt-12 text-center text-xs text-slate-400">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng (ATLAS)</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-blue-300 hover:text-white transition-colors cursor-pointer"
-          >
-            Kembali ke Beranda ATLAS
-          </button>
+      {/* 4. Footer Section (Sama persis seperti Landing Page) */}
+      <footer className="bg-[#001D48] text-white pt-12 pb-6 border-t border-[#001738] mt-16 w-full">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-slate-800 text-xs leading-relaxed">
+          {/* Column 1: Info Dinas */}
+          <div className="space-y-3">
+            <h3 className="font-extrabold text-sm text-white tracking-wider uppercase">
+              Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng
+            </h3>
+            <p className="text-slate-300">
+              ATLAS hadir sebagai solusi digital terintegrasi dari Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng. Memberikan kemudahan layanan pengelolaan arsip dan sirkulasi perpustakaan yang modern dan mudah diakses kapan saja oleh masyarakat Buleleng.
+            </p>
+          </div>
+
+          {/* Column 2: Waktu Layanan */}
+          <div className="space-y-3">
+            <h3 className="font-extrabold text-sm text-white tracking-wider uppercase">
+              Waktu Layanan
+            </h3>
+            <ul className="space-y-1.5 text-slate-300">
+              <li>
+                <span className="font-bold text-white">Senin - Kamis:</span> 07.30 – 16.00 WITA
+              </li>
+              <li>
+                <span className="font-bold text-white">Jumat:</span> 07.30 – 14.00 WITA
+              </li>
+              <li className="text-rose-400 font-bold">
+                Hari Libur: Tutup
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Kontak & Alamat */}
+          <div className="space-y-3">
+            <h3 className="font-extrabold text-sm text-white tracking-wider uppercase">
+              Kontak & Alamat
+            </h3>
+            <ul className="space-y-2 text-slate-300">
+              <li className="flex items-center space-x-2">
+                <span>📍</span>
+                <span>Jl. Wrekudara No.1 Singaraja</span>
+              </li>
+              <li className="flex items-center space-x-2">
+                <span>✉️</span>
+                <span>dap@bulelengkab.go.id</span>
+              </li>
+              <li className="flex items-center space-x-2">
+                <span>📞</span>
+                <span>(0362) 24754</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Copyright Bar */}
+        <div className="max-w-6xl mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-3">
+          <p>© 2026 Dinas Komunikasi, Informatika, Persandian, dan Statistik Kabupaten Buleleng</p>
+          <div className="flex items-center space-x-4">
+            <a href="#kebijakan" className="hover:text-white transition-colors">Kebijakan Sirkulasi</a>
+            <span>|</span>
+            <a href="#etika" className="hover:text-white transition-colors">Etika Perpustakaan</a>
+            <span>|</span>
+            <a href="#bantuan" className="hover:text-white transition-colors">Bantuan OPAC</a>
+          </div>
         </div>
       </footer>
 
