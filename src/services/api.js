@@ -129,3 +129,28 @@ export const loginUser = loginMember
 export function getGoogleLoginUrl() {
   return `${BACKEND_BASE_URL}/auth/google`
 }
+
+export async function fetchProfile() {
+  const token = localStorage.getItem('atlas_token')
+  const url = `${API_BASE_URL}/v1/profile`
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Gagal mengambil profil (Status: ${response.status})`)
+    }
+
+    const result = await response.json()
+    return result
+  } catch (error) {
+    console.error('API Error fetchProfile:', error)
+    throw error
+  }
+}
+

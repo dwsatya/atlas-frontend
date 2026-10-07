@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import background2 from '../../assets/background2.jpeg'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
@@ -7,6 +8,25 @@ import { fetchBooks } from '../../services/api'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user, isAuthenticated, login } = useAuth()
+
+  // Tangani callback login Google jika diarahkan ke landing page
+  useEffect(() => {
+    const tokenParam = searchParams.get('token')
+    const userParam = searchParams.get('user')
+
+    if (tokenParam && userParam) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userParam))
+        login(parsedUser, tokenParam)
+        // Bersihkan token & data user dari URL di browser address bar
+        window.history.replaceState({}, document.title, window.location.pathname)
+      } catch (err) {
+        console.error('Failed to parse Google user parameter on landing page:', err)
+      }
+    }
+  }, [searchParams, login])
 
   const [searchKeyword, setSearchKeyword] = useState('')
   const [category, setCategory] = useState('Judul Buku')
@@ -89,16 +109,50 @@ export default function LandingPage() {
               </svg>
             </div>
 
-            {/* Login Pill Button */}
-            <button
-              onClick={() => navigate('/login')}
-              className="bg-white hover:bg-slate-100 text-[#002B66] px-5 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-            >
-              <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
-              <span>Login</span>
-            </button>
+            {/* Login / Profile Pill Button */}
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="bg-white hover:bg-slate-100 text-[#002B66] px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                title="Lihat Profil Anggota"
+              >
+                {user?.avatar || user?.photo_path ? (
+                  <img
+                    src={user.avatar || user.photo_path}
+                    alt={user.name || 'User'}
+                    className="w-5 h-5 rounded-full object-cover shrink-0"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                    />
+                  </svg>
+                )}
+                <span className="max-w-[130px] truncate">{user?.name ? user.name.split(' ')[0] : 'Profile'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="bg-white hover:bg-slate-100 text-[#002B66] px-5 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                  />
+                </svg>
+                <span>Login</span>
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -255,45 +309,47 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Card 2: Pendaftaran Anggota */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-2 text-[#032360] font-bold text-base border-b border-slate-100 pb-3">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span>Pendaftaran Anggota</span>
-              </div>
+            {/* Card 2: Pendaftaran Anggota (Hanya tampil jika belum login) */}
+            {!isAuthenticated && (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-[#032360] font-bold text-base border-b border-slate-100 pb-3">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span>Pendaftaran Anggota</span>
+                </div>
 
-              <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 space-y-3">
-                <h4 className="text-xs font-bold text-[#032360] leading-snug">
-                  Belum Punya Kartu Anggota (KTA)?
-                </h4>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Daftarkan diri secara online untuk akses peminjaman buku sirkulasi, reservasi bahan pustaka, dan fasilitas baca digital.
-                </p>
+                <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-[#032360] leading-snug">
+                    Belum Punya Kartu Anggota (KTA)?
+                  </h4>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Daftarkan diri secara online untuk akses peminjaman buku sirkulasi, reservasi bahan pustaka, dan fasilitas baca digital.
+                  </p>
 
-                <ul className="space-y-1.5 text-[11px] text-slate-700 font-medium pt-1">
-                  <li className="flex items-center gap-1.5 text-emerald-700">
-                    <span>✓</span> <span>Daftar menjadi anggota secara online</span>
-                  </li>
-                  <li className="flex items-center gap-1.5 text-emerald-700">
-                    <span>✓</span> <span>Cetak kartu anggota saat kunjungan</span>
-                  </li>
-                </ul>
+                  <ul className="space-y-1.5 text-[11px] text-slate-700 font-medium pt-1">
+                    <li className="flex items-center gap-1.5 text-emerald-700">
+                      <span>✓</span> <span>Daftar menjadi anggota secara online</span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-emerald-700">
+                      <span>✓</span> <span>Cetak kartu anggota saat kunjungan</span>
+                    </li>
+                  </ul>
 
-                <div className="pt-2">
-                  <button
-                    onClick={() => navigate('/register')}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                  >
-                    <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    <span>Daftar Anggota Baru</span>
-                  </button>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => navigate('/register')}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    >
+                      <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      <span>Daftar Anggota Baru</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Card 3: Layanan Mandiri */}
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3">

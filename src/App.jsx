@@ -7,6 +7,7 @@ import LoginUser from './pages/LoginUser'
 import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -43,6 +44,22 @@ export default function App() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profil"
+        element={
+          <PrivateRoute>
+            <Profile />
           </PrivateRoute>
         }
       />

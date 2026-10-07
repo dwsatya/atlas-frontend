@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 
 const AuthContext = createContext(null)
 
@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
 
   const [token, setToken] = useState(() => localStorage.getItem('atlas_token') || null)
 
-  const login = (userData, userToken = null) => {
+  const login = useCallback((userData, userToken = null) => {
     let finalUser = {}
     if (typeof userData === 'string') {
       finalUser = {
@@ -32,19 +32,27 @@ export function AuthProvider({ children }) {
       setToken(userToken)
       localStorage.setItem('atlas_token', userToken)
     }
-  }
+  }, [])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('atlas_user')
     localStorage.removeItem('atlas_token')
-  }
+  }, [])
 
   const isAuthenticated = !!user
 
+  const contextValue = useMemo(() => ({
+    user,
+    token,
+    isAuthenticated,
+    login,
+    logout,
+  }), [user, token, isAuthenticated, login, logout])
+
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
