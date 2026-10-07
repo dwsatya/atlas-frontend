@@ -28,7 +28,21 @@ export default function LoginUser() {
             try {
                 const parsedUser = JSON.parse(decodeURIComponent(userParam))
                 login(parsedUser, tokenParam)
-                navigate('/dashboard', { replace: true })
+
+                if (parsedUser.has_completed_data) {
+                    navigate('/', { replace: true })
+                } else {
+                    // Lanjut ke form data diri setelah login dengan Google
+                    navigate('/form-data-diri', {
+                        replace: true,
+                        state: {
+                            email: parsedUser.email,
+                            name: parsedUser.name,
+                            avatar: parsedUser.avatar || parsedUser.photo_path,
+                            fromGoogle: true,
+                        },
+                    })
+                }
             } catch (err) {
                 console.error('Failed to parse Google user parameter:', err)
             }
@@ -47,7 +61,7 @@ export default function LoginUser() {
                 const memberData = response?.data?.member || { name: email.split('@')[0], email }
                 const token = response?.token || response?.data?.token
                 login(memberData, token)
-                navigate('/dashboard')
+                navigate('/')
             }
         } catch (err) {
             setErrorMessage(err.message || 'Email atau password salah.')
@@ -273,7 +287,7 @@ export default function LoginUser() {
                     <button
                         type="button"
                         onClick={() => {
-                            window.location.href = 'http://localhost:8000/auth/google'
+                            window.location.href = getGoogleLoginUrl()
                         }}
                         className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Masuk dengan Google"

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { registerMember } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
@@ -7,15 +7,34 @@ import background1 from '../../assets/background1.jpeg'
 export default function FormDataDiri() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { login } = useAuth()
+    const [searchParams] = useSearchParams()
+    const { login, user: authUser } = useAuth()
 
-    const initialEmail = location.state?.email || ''
+    // Ambil data Google dari query parameter jika dialihkan langsung oleh backend
+    const tokenParam = searchParams.get('token')
+    const userParam = searchParams.get('user')
+
+    let queryUser = null
+    if (userParam) {
+        try {
+            queryUser = JSON.parse(decodeURIComponent(userParam))
+        } catch (e) {
+            console.error('Failed to parse user param in FormDataDiri:', e)
+        }
+    }
+
+    const initialEmail = queryUser?.email || location.state?.email || authUser?.email || ''
     const initialPassword = location.state?.password || ''
+    const initialName = queryUser?.name || location.state?.name || authUser?.name || ''
+    const initialAvatar = queryUser?.avatar || queryUser?.photo_path || location.state?.avatar || authUser?.avatar || authUser?.photo_path || null
+    const fromGoogle = Boolean(queryUser || location.state?.fromGoogle || authUser?.google_id || initialAvatar)
 
     const [email, setEmail] = useState(initialEmail)
     const [password, setPassword] = useState(initialPassword)
+    const [namaLengkap, setNamaLengkap] = useState(initialName)
+    const [avatar, setAvatar] = useState(initialAvatar)
+    const [isGoogleAccount, setIsGoogleAccount] = useState(fromGoogle)
 
-    const [namaLengkap, setNamaLengkap] = useState('')
     const [alamatTinggal, setAlamatTinggal] = useState('')
     const [alamatKtp, setAlamatKtp] = useState('')
     const [samaDenganAlamatTinggal, setSamaDenganAlamatTinggal] = useState(false)
@@ -29,6 +48,19 @@ export default function FormDataDiri() {
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState(null)
     const [successMessage, setSuccessMessage] = useState(null)
+
+    // Tangani penyimpanan sesi login dan prefill data akun dari callback Google
+    useEffect(() => {
+        if (tokenParam && queryUser) {
+            login(queryUser, tokenParam)
+            setEmail(queryUser.email || '')
+            setNamaLengkap(queryUser.name || '')
+            setAvatar(queryUser.avatar || queryUser.photo_path || null)
+            setIsGoogleAccount(true)
+            // Bersihkan token dari URL address bar tanpa reload
+            window.history.replaceState({}, document.title, window.location.pathname)
+        }
+    }, [tokenParam, userParam, login])
 
     const handlePekerjaanChange = (option) => {
         setPekerjaan(pekerjaan === option ? '' : option)
@@ -51,7 +83,7 @@ export default function FormDataDiri() {
             return
         }
 
-        if (!password || password.length < 6) {
+        if (!isGoogleAccount && !fromGoogle && (!password || password.length < 6)) {
             setErrorMessage('Password minimal harus 6 karakter.')
             return
         }
@@ -61,7 +93,7 @@ export default function FormDataDiri() {
             return
         }
 
-        if (!fotoFormal) {
+        if (!fotoFormal && !avatar && !initialAvatar) {
             setErrorMessage('Foto formal wajib diunggah untuk kartu anggota perpustakaan.')
             return
         }
@@ -72,7 +104,9 @@ export default function FormDataDiri() {
             const formData = new FormData()
             formData.append('name', namaLengkap)
             formData.append('email', email)
-            formData.append('password', password)
+            if (password) {
+                formData.append('password', password)
+            }
             formData.append('residential_address', alamatTinggal)
             formData.append('ktp_address', alamatKtp)
             formData.append('place_of_birth', tempatLahir)
@@ -80,7 +114,9 @@ export default function FormDataDiri() {
             formData.append('job_category', pekerjaan.toUpperCase())
             formData.append('institution_name', instansi)
             formData.append('phone_number', noHandphone)
-            formData.append('photo', fotoFormal)
+            if (fotoFormal) {
+                formData.append('photo', fotoFormal)
+            }
 
             const response = await registerMember(formData)
 
@@ -91,7 +127,7 @@ export default function FormDataDiri() {
                     phone_number: noHandphone,
                     job_category: pekerjaan.toUpperCase(),
                     institution: instansi,
-                    photo_path: response?.data?.member?.photo_path,
+                    photo_path: response?.data?.member?.photo_path || avatar || initialAvatar,
                     member_no: response?.data?.member?.member_no,
                 }
                 const token = response?.token || response?.data?.token
@@ -99,9 +135,9 @@ export default function FormDataDiri() {
                 login(memberData, token)
                 setSuccessMessage(response.message || 'Pendaftaran berhasil!')
 
-                // Redirect ke dashboard
+                // Redirect langsung ke halaman profil
                 setTimeout(() => {
-                    navigate('/dashboard', { replace: true })
+                    navigate('/profile', { replace: true })
                 }, 1000)
             }
         } catch (err) {
@@ -165,8 +201,32 @@ export default function FormDataDiri() {
                         </p>
                     </div>
 
-                    {/* Email Badge jika dari langkah registrasi sebelumnya */}
-                    {initialEmail ? (
+                    {/* Google Login Badge jika dari Google */}
+                    {(isGoogleAccount || fromGoogle) && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            {(avatar || initialAvatar) ? (
+                                <img
+                                    src={avatar || initialAvatar}
+                                    alt="Google Avatar"
+                                    className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover shrink-0"
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                    G
+                                </div>
+                            )}
+                            <div className="text-xs min-w-0">
+                                <span className="inline-block px-2 py-0.5 rounded-md font-bold bg-blue-100 text-[#002B66] text-[10px] mb-0.5">
+                                    ✓ Akun Google Terhubung
+                                </span>
+                                <p className="font-bold text-[#032360] truncate">{email || initialEmail}</p>
+                                <p className="text-slate-500 text-[11px]">Silakan lengkapi data diri Anda untuk penerbitan kartu anggota perpustakaan.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Email Badge jika dari langkah registrasi sebelumnya biasa */}
+                    {(email || initialEmail) && !isGoogleAccount && !fromGoogle ? (
                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between text-xs sm:text-sm">
                             <div className="flex items-center gap-2 text-slate-600 truncate">
                                 <svg
@@ -183,7 +243,7 @@ export default function FormDataDiri() {
                                     />
                                 </svg>
                                 <span className="truncate">
-                                    Akun: <strong className="text-[#032360]">{initialEmail}</strong>
+                                    Akun: <strong className="text-[#032360]">{email || initialEmail}</strong>
                                 </span>
                             </div>
                             <button
@@ -240,7 +300,7 @@ export default function FormDataDiri() {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Fallback Email & Password jika user langsung mengakses /form-data-diri */}
-                        {!initialEmail && (
+                        {(!initialEmail && !email && !isGoogleAccount && !fromGoogle) && (
                             <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                                 <div className="space-y-1">
                                     <label className="block text-sm font-bold text-[#032360]">
@@ -440,7 +500,7 @@ export default function FormDataDiri() {
                                     <input
                                         type="file"
                                         accept=".jpg,.jpeg,.png"
-                                        required={!fotoFormal}
+                                        required={!fotoFormal && !avatar && !initialAvatar}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0]
                                             if (file) setFotoFormal(file)
@@ -498,6 +558,17 @@ export default function FormDataDiri() {
                                                     />
                                                 </svg>
                                                 <span className="text-xs font-bold">Ganti Foto</span>
+                                            </div>
+                                        </>
+                                    ) : (avatar || initialAvatar) ? (
+                                        <>
+                                            <img
+                                                src={avatar || initialAvatar}
+                                                alt="Preview Foto Akun Google"
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            />
+                                            <div className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-white py-1.5 px-2 flex items-center justify-center gap-1 text-[11px] font-bold backdrop-blur-[2px]">
+                                                <span>Ganti Pasfoto</span>
                                             </div>
                                         </>
                                     ) : (

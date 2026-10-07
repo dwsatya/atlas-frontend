@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getGoogleLoginUrl } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
 
 export default function RegisterUser() {
@@ -234,7 +235,7 @@ export default function RegisterUser() {
                     <button
                         type="button"
                         onClick={() => {
-                            window.location.href = 'http://localhost:8000/auth/google'
+                            window.location.href = getGoogleLoginUrl()
                         }}
                         className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Daftar dengan Google"
