@@ -12,7 +12,7 @@ export function resolvePhotoUrl(photo) {
 
   // Koreksi jika URL lama tidak sengaja memuat /profile-photos/ tanpa /storage/
   if (photo.includes('/profile-photos/') && !photo.includes('/storage/profile-photos/')) {
-    return photo.replace('/profile-photos/', '/storage/profile-photos/')
+    photo = photo.replace('/profile-photos/', '/storage/profile-photos/')
   }
 
   if (photo.startsWith('http://') || photo.startsWith('https://')) {
@@ -28,30 +28,76 @@ export function resolvePhotoUrl(photo) {
 }
 
 /**
- * Helper untuk memuat Image HTML secara async
+ * Helper untuk memuat Image HTML secara async dan tahan CORS
+ * Menggunakan strategi multi-fallback (Blob URL via Vite proxy, backend CORS /api/storage/, dan direct Image)
  */
-function loadImage(src) {
-  return new Promise((resolve) => {
-    if (!src) return resolve(null)
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = async () => {
-      // Fallback jika CORS standard gagal: fetch sebagai Blob
-      try {
-        const res = await fetch(src)
+export async function loadImage(src) {
+  if (!src) return null
+
+  // 1. Jika data URL atau Blob URL, langsung load
+  if (src.startsWith('data:') || src.startsWith('blob:')) {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => resolve(null)
+      img.src = src
+    })
+  }
+
+  // 2. Siapkan daftar kandidat URL
+  const candidateUrls = []
+
+  if (src.includes('/storage/')) {
+    const storagePath = src.split('/storage/')[1]
+    // a. Relative path via Vite dev server proxy (same-origin, 100% bebas CORS di browser)
+    candidateUrls.push(`/storage/${storagePath}`)
+    // b. Endpoint publik Laravel dengan header Access-Control-Allow-Origin: *
+    candidateUrls.push(`http://localhost:8000/api/storage/${storagePath}`)
+    // c. Direct localhost:8000 storage
+    candidateUrls.push(`http://localhost:8000/storage/${storagePath}`)
+  }
+
+  if (!candidateUrls.includes(src)) {
+    candidateUrls.push(src)
+  }
+
+  // 3. Coba unduh via fetch -> Blob URL terlebih dahulu agar tidak menodai (taint) Canvas
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, { mode: 'cors' })
+      if (res.ok) {
         const blob = await res.blob()
-        const blobUrl = URL.createObjectURL(blob)
-        const fbImg = new Image()
-        fbImg.onload = () => resolve(fbImg)
-        fbImg.onerror = () => resolve(null)
-        fbImg.src = blobUrl
-      } catch {
-        resolve(null)
+        if (blob && blob.size > 0) {
+          const blobUrl = URL.createObjectURL(blob)
+          const img = await new Promise((resolve) => {
+            const i = new Image()
+            i.onload = () => resolve(i)
+            i.onerror = () => resolve(null)
+            i.src = blobUrl
+          })
+          if (img) return img
+        }
       }
+    } catch {
+      // Lanjut coba kandidat URL berikutnya jika fetch gagal
     }
-    img.src = src
-  })
+
+    // Fallback coba via Image dengan crossOrigin anonymous
+    try {
+      const img = await new Promise((resolve) => {
+        const i = new Image()
+        i.crossOrigin = 'anonymous'
+        i.onload = () => resolve(i)
+        i.onerror = () => resolve(null)
+        i.src = url
+      })
+      if (img) return img
+    } catch {
+      // Lanjut
+    }
+  }
+
+  return null
 }
 
 /**
@@ -64,22 +110,23 @@ async function drawKtaFront(ctx, { memberNo, name, photo, createdAt, locationNam
     ctx.drawImage(templateImg, 0, 0, 1004, 636)
   }
 
-  // 1. Tutupi kotak abu-abu template foto dengan kotak putih bersih
-  // Area template foto: left 7.07% (71px), top 34.43% (219px), w 22.61% (227px), h 34.28% (218px)
-  const boxX = 71
-  const boxY = 219
-  const boxW = 227
-  const boxH = 218
+  // 1. Tutupi area kotak abu-abu template foto dengan kotak putih bersih
+  // Template foto asli: X=71..239 (w:169), Y=219..437 (h:219).
+  // Tutupi dengan margin +2px ke setiap sisi (X:69, Y:217, W:173, H:223) agar tidak ada garis/shadow abu-abu tersisa.
+  const coverPhotoX = 69
+  const coverPhotoY = 217
+  const coverPhotoW = 173
+  const coverPhotoH = 223
 
   ctx.fillStyle = '#FFFFFF'
-  ctx.fillRect(boxX, boxY, boxW, boxH)
+  ctx.fillRect(coverPhotoX, coverPhotoY, coverPhotoW, coverPhotoH)
 
   // 2. Gambar pasfoto anggota dengan rasio 2:3 (lebar : tinggi = 2 : 3)
-  // Tinggi = 218px, Lebar = 218 * (2/3) = 145.3px
-  const photoW = Math.round(boxH * (2 / 3))
-  const photoH = boxH
-  const photoX = Math.round(boxX + (boxW - photoW) / 2)
-  const photoY = boxY
+  // Tinggi = 219px (tinggi slot asli), Lebar = 219 * (2/3) = 146px
+  const photoH = 219
+  const photoW = Math.round(photoH * (2 / 3))
+  const photoX = Math.round(71 + (169 - photoW) / 2)
+  const photoY = 219
 
   const resolvedPhotoUrl = resolvePhotoUrl(photo)
   const photoImg = resolvedPhotoUrl ? await loadImage(resolvedPhotoUrl) : null
@@ -98,23 +145,17 @@ async function drawKtaFront(ctx, { memberNo, name, photo, createdAt, locationNam
       sW = photoImg.naturalWidth
       sH = Math.round(photoImg.naturalWidth / targetAspect)
       sX = 0
-      sY = 0 // Pertahankan bagian atas (wajah)
+      sY = 0 // Fokus wajah bagian atas
     }
 
+    // Gambar pasfoto langsung tanpa border atau shadow (bersih sesuai permintaan)
     ctx.drawImage(photoImg, sX, sY, sW, sH, photoX, photoY, photoW, photoH)
-    // Garis batas halus pasfoto
-    ctx.strokeStyle = '#CBD5E1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(photoX, photoY, photoW, photoH)
   } else {
-    // Placeholder pasfoto jika belum ada foto
-    ctx.fillStyle = '#F1F5F9'
+    // Placeholder pasfoto jika belum ada foto (tanpa shadow/border)
+    ctx.fillStyle = '#F8FAFC'
     ctx.fillRect(photoX, photoY, photoW, photoH)
-    ctx.strokeStyle = '#CBD5E1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(photoX, photoY, photoW, photoH)
 
-    ctx.fillStyle = '#64748B'
+    ctx.fillStyle = '#94A3B8'
     ctx.font = 'bold 15px Arial, sans-serif'
     ctx.textAlign = 'center'
     ctx.fillText('Pasfoto 2:3', photoX + photoW / 2, photoY + photoH / 2)
@@ -132,10 +173,12 @@ async function drawKtaFront(ctx, { memberNo, name, photo, createdAt, locationNam
   ctx.fillText(validUntil, textLeft, 428)
 
   // 4. Barcode Code 128
-  const barcodeBoxX = 173
-  const barcodeBoxY = 483
-  const barcodeBoxW = 476
-  const barcodeBoxH = 113
+  // Template barcode asli: X=173..649 (w:477), Y=483..596 (h:114).
+  // Tutupi dengan margin +2px ke setiap sisi (X:171, Y:481, W:481, H:118) agar tidak ada garis/shadow abu-abu tersisa.
+  const barcodeBoxX = 171
+  const barcodeBoxY = 481
+  const barcodeBoxW = 481
+  const barcodeBoxH = 118
 
   ctx.fillStyle = '#FFFFFF'
   ctx.fillRect(barcodeBoxX, barcodeBoxY, barcodeBoxW, barcodeBoxH)
@@ -143,7 +186,7 @@ async function drawKtaFront(ctx, { memberNo, name, photo, createdAt, locationNam
   const barcodeData = generateCode128(memberNo || 'MEM-000000-0000')
   const availableBarWidth = 440
   const unitW = availableBarWidth / barcodeData.width
-  const barStartX = barcodeBoxX + (barcodeBoxW - availableBarWidth) / 2
+  const barStartX = 173 + (477 - availableBarWidth) / 2
   const barY = 492
   const barH = 72
 
@@ -152,11 +195,11 @@ async function drawKtaFront(ctx, { memberNo, name, photo, createdAt, locationNam
     ctx.fillRect(Math.round(barStartX + bar.x * unitW), barY, Math.max(1, Math.round(bar.w * unitW)), barH)
   })
 
-  // Nomor anggota di bawah garis barcode
+  // Nomor anggota di bawah garis barcode (tanpa shadow/border)
   ctx.font = 'bold 18px monospace'
   ctx.textAlign = 'center'
   ctx.fillStyle = '#000000'
-  ctx.fillText(memberNo || '', barcodeBoxX + barcodeBoxW / 2, 584)
+  ctx.fillText(memberNo || '', 173 + 477 / 2, 584)
 }
 
 /**

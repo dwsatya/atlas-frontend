@@ -103,17 +103,17 @@ export function KtaFront({
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
 
-      {/* 1. Pasfoto Anggota 2:3 (Area template ditutup putih, foto di-center dengan rasio 2:3) */}
+      {/* 1. Pasfoto Anggota 2:3 (Area template ditutup putih, foto di-center dengan rasio 2:3 tanpa border & shadow) */}
       <div
-        className="absolute flex items-center justify-center bg-white overflow-hidden rounded-[2px]"
+        className="absolute flex items-center justify-center bg-white overflow-hidden"
         style={{
-          left: '7.07%',
-          top: '34.43%',
-          width: '22.61%',
-          height: '34.28%',
+          left: '6.87%',
+          top: '34.12%',
+          width: '17.23%',
+          height: '35.06%',
         }}
       >
-        <div className="h-full aspect-[2/3] overflow-hidden rounded-[2px] shadow-xs border border-slate-300/80 bg-slate-100 flex items-center justify-center">
+        <div className="h-full aspect-[2/3] overflow-hidden bg-white flex items-center justify-center">
           {resolvedPhoto && !imgError ? (
             <img
               src={resolvedPhoto}
@@ -122,9 +122,9 @@ export function KtaFront({
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center text-center p-1 text-slate-500 font-medium leading-tight">
+            <div className="flex flex-col items-center justify-center text-center p-1 text-slate-400 font-medium leading-tight">
               <svg
-                className="w-[3cqw] h-[3cqw] text-slate-400 mb-0.5"
+                className="w-[3cqw] h-[3cqw] text-slate-300 mb-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -202,14 +202,14 @@ export function KtaFront({
         {validUntil}
       </div>
 
-      {/* 3. Barcode Anggota (Presisi di area kotak barcode: left 17.23%, top 75.94%, w 47.41%, h 17.77%) */}
+      {/* 3. Barcode Anggota (Presisi di area kotak barcode tanpa border & shadow) */}
       <div
-        className="absolute flex flex-col items-center justify-center bg-white px-1.5 py-0.5 rounded-[2px]"
+        className="absolute flex flex-col items-center justify-center bg-white px-1.5 py-0.5"
         style={{
-          left: '17.23%',
-          top: '75.94%',
-          width: '47.41%',
-          height: '17.77%',
+          left: '17.03%',
+          top: '75.63%',
+          width: '47.91%',
+          height: '18.55%',
         }}
       >
         {/* Garis Barcode SVG Code 128 */}
