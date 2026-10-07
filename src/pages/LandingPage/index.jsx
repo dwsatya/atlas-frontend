@@ -38,16 +38,16 @@ export default function LandingPage() {
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <button
               onClick={() => navigate('/')}
-              className="text-white font-bold pb-1 border-b-2 border-whi cursor-pointer"
+              className="text-white font-bold pb-1 border-b-2 border-white cursor-pointer"
             >
               Beranda
             </button>
-            <a
-              href="#opac"
-              className="text-white/80 hover:text-white transition-colors"
+            <button
+              onClick={() => navigate('/opac')}
+              className="text-white/80 hover:text-white transition-colors cursor-pointer"
             >
               OPAC / Katalog
-            </a>
+            </button>
             <div className="relative group cursor-pointer hidden sm:flex items-center gap-1 text-white/80 hover:text-white transition-colors">
               <span>Layanan Mandiri</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,7 +338,8 @@ export default function LandingPage() {
 
               <button
                 type="button"
-                className="px-5 py-2 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                onClick={() => navigate('/opac')}
+                className="px-5 py-2 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
               >
                 <span>Lihat Semua Koleksi</span>
                 <span>&rarr;</span>
