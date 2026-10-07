@@ -154,3 +154,91 @@ export async function fetchProfile() {
   }
 }
 
+export async function updateProfile(dataOrFormData) {
+  const token = localStorage.getItem('atlas_token')
+  const url = `${API_BASE_URL}/v1/profile`
+
+  const headers = {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  let body
+  let method = 'PUT'
+
+  if (dataOrFormData instanceof FormData) {
+    body = dataOrFormData
+    method = 'POST'
+    if (!dataOrFormData.has('_method')) {
+      dataOrFormData.append('_method', 'PUT')
+    }
+  } else {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(dataOrFormData)
+  }
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui profil (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error updateProfile:', error)
+    throw error
+  }
+}
+
+export async function updateProfilePhoto(file) {
+  const token = localStorage.getItem('atlas_token')
+  const url = `${API_BASE_URL}/v1/profile/photo`
+
+  const formData = new FormData()
+  formData.append('photo', file)
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui foto profil (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error updateProfilePhoto:', error)
+    throw error
+  }
+}
+
+
