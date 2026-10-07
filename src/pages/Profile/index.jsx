@@ -5,6 +5,7 @@ import { fetchProfile, updateProfile } from '../../services/api'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
 import KtaCard, { KtaFront, KtaBack } from '../../components/KtaCard'
+import { resolvePhotoUrl, downloadKtaImage } from '../../utils/ktaImageGenerator'
 
 function formatDateForInput(dateVal) {
   if (!dateVal) return ''
@@ -48,6 +49,7 @@ export default function Profile() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(null)
+  const [downloadingSide, setDownloadingSide] = useState(null)
 
   useEffect(() => {
     async function loadLatestProfile() {
@@ -210,7 +212,27 @@ export default function Profile() {
     : '-'
   const ktpAddress = profileData?.ktp_address || '-'
   const residentialAddress = profileData?.residential_address || '-'
-  const photo = photoPreview || profileData?.photo_url || profileData?.photo_path || profileData?.avatar || null
+  const rawPhoto = photoPreview || profileData?.photo_url || profileData?.photo_path || profileData?.avatar || null
+  const photo = resolvePhotoUrl(rawPhoto)
+
+  const handleDownloadKta = async (side) => {
+    try {
+      setDownloadingSide(side)
+      await downloadKtaImage({
+        side,
+        memberNo,
+        name,
+        photo,
+        createdAt: profileData?.created_at,
+        locationName: 'Perpustakaan Daerah',
+      })
+    } catch (err) {
+      console.error('Failed to download KTA image:', err)
+      alert('Gagal mengunduh gambar KTA. Silakan coba lagi.')
+    } finally {
+      setDownloadingSide(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-500 selection:text-white flex flex-col justify-between">
@@ -472,11 +494,11 @@ export default function Profile() {
               ) : (
                 /* MODE 2: FORM EDIT BIODATA LANGSUNG */
                 <form onSubmit={handleSaveProfile} className="space-y-5 text-xs">
-                  {/* Bagian Ubah Pasfoto */}
+                  {/* Bagian Ubah Pasfoto (Proporsi 2:3) */}
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-200 overflow-hidden border-2 border-white shadow-md shrink-0 flex items-center justify-center">
+                    <div className="w-16 aspect-[2/3] rounded-xl bg-slate-200 overflow-hidden border-2 border-white shadow-md shrink-0 flex items-center justify-center">
                       {photo ? (
-                        <img src={photo} alt={name} className="w-full h-full object-cover" />
+                        <img src={photo} alt={name} className="w-full h-full object-cover object-top" />
                       ) : (
                         <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -504,7 +526,7 @@ export default function Profile() {
                             />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          <span>{photoFile ? 'Ganti Foto Terpilih' : 'Unggah Pasfoto Baru'}</span>
+                          <span>{photoFile ? 'Ganti Foto Terpilih' : 'Unggah Pasfoto Baru (2:3)'}</span>
                         </label>
                         <input
                           id="photo-file-input"
@@ -528,7 +550,7 @@ export default function Profile() {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-500">
-                        Format JPG, PNG, atau WebP (maks. 2MB). Foto akan langsung tampil pada Kartu Anggota (KTA).
+                        Format JPG, PNG, atau WebP (maks. 2MB). Foto berformat pasfoto 2:3 dan otomatis tampil pada Kartu Anggota (KTA).
                       </p>
                     </div>
                   </div>
@@ -772,7 +794,7 @@ export default function Profile() {
         </div>
       </footer>
 
-      {/* 5. Modal Preview & Cetak KTA */}
+      {/* 5. Modal Unduh KTA Gambar (PNG) */}
       {showPrintModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
@@ -785,13 +807,13 @@ export default function Profile() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base sm:text-lg">Pratinjau Cetak KTA</h3>
-                  <p className="text-xs text-blue-200">Kartu Tanda Anggota Perpustakaan Daerah Buleleng</p>
+                  <h3 className="font-extrabold text-base sm:text-lg">Unduh Kartu Tanda Anggota (KTA)</h3>
+                  <p className="text-xs text-blue-200">Simpan kartu anggota dalam format gambar (PNG) berkualitas tinggi</p>
                 </div>
               </div>
               <button
@@ -807,10 +829,10 @@ export default function Profile() {
             <div className="p-6 sm:p-8 space-y-6 max-h-[75vh] overflow-y-auto">
               {/* Pratinjau 2 Sisi (Depan & Belakang) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#002B66]" />
-                    <span>Sisi Depan (Identitas & Barcode)</span>
+                    <span>Sisi Depan (Identitas & Pasfoto 2:3)</span>
                   </span>
                   <div className="rounded-2xl overflow-hidden border border-slate-300 shadow-md">
                     <KtaFront
@@ -821,9 +843,20 @@ export default function Profile() {
                       locationName="Perpustakaan Daerah"
                     />
                   </div>
+                  <button
+                    type="button"
+                    disabled={downloadingSide !== null}
+                    onClick={() => handleDownloadKta('depan')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-blue-50 text-[#002B66] font-bold text-xs border border-slate-200 hover:border-blue-300 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>{downloadingSide === 'depan' ? 'Menyiapkan Gambar...' : 'Unduh Sisi Depan (PNG)'}</span>
+                  </button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-slate-400" />
                     <span>Sisi Belakang (Tata Tertib)</span>
@@ -831,33 +864,44 @@ export default function Profile() {
                   <div className="rounded-2xl overflow-hidden border border-slate-300 shadow-md">
                     <KtaBack />
                   </div>
+                  <button
+                    type="button"
+                    disabled={downloadingSide !== null}
+                    onClick={() => handleDownloadKta('belakang')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-blue-50 text-[#002B66] font-bold text-xs border border-slate-200 hover:border-blue-300 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>{downloadingSide === 'belakang' ? 'Menyiapkan Gambar...' : 'Unduh Sisi Belakang (PNG)'}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Informasi & Panduan Cetak */}
-              <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-4 space-y-2 text-xs text-amber-900">
-                <div className="font-bold flex items-center gap-2 text-amber-950">
-                  <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              {/* Informasi & Petunjuk Unduh Gambar */}
+              <div className="rounded-2xl bg-blue-50/80 border border-blue-200/80 p-4 space-y-2 text-xs text-blue-950">
+                <div className="font-bold flex items-center gap-2 text-[#002B66]">
+                  <svg className="w-4 h-4 text-[#002B66]" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Petunjuk Pencetakan KTA:</span>
+                  <span>Informasi Berkas Gambar KTA:</span>
                 </div>
                 <ul className="list-disc list-inside space-y-1 text-slate-700 text-[11px] leading-relaxed">
                   <li>
-                    Ukuran kartu dirancang sesuai standar internasional <strong>ID-1 / CR-80</strong> (85.6 mm × 54.0 mm).
+                    Kartu diunduh langsung dalam format <strong>gambar PNG resolusi tinggi (1004 × 636 piksel)</strong> tanpa dialog PDF peramban.
                   </li>
                   <li>
-                    Disarankan mencetak menggunakan bahan <strong>PVC Card</strong> atau kertas tebal / Art Paper (260 - 310 gsm).
+                    Pasfoto ditampilkan rapi dalam proporsi standar <strong>2:3 portrait</strong>.
                   </li>
                   <li>
-                    Pada jendela cetak peramban (browser), pastikan opsi <strong>"Background graphics / Grafik latar belakang"</strong> tercentang dan skala diatur ke <strong>100% / Default</strong>.
+                    Garis barcode dibuat presisi dan jelas agar dapat langsung dipindai oleh barcode scanner di perpustakaan.
                   </li>
                   <li>
-                    Anda juga dapat memilih tujuan <strong>"Save as PDF / Simpan sebagai PDF"</strong> untuk mengunduh dokumen KTA digital ke perangkat Anda.
+                    Berkas gambar ini siap dicetak langsung pada kertas PVC card atau disimpan di galeri smartphone Anda.
                   </li>
                 </ul>
               </div>
@@ -870,157 +914,27 @@ export default function Profile() {
                 onClick={() => setShowPrintModal(false)}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer"
               >
-                Batal
+                Tutup
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  window.print()
-                }}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                disabled={downloadingSide !== null}
+                onClick={() => handleDownloadKta('keduanya')}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
               >
                 <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                   />
                 </svg>
-                <span>Cetak Sekarang (Print / PDF)</span>
+                <span>{downloadingSide === 'keduanya' ? 'Menyiapkan Gambar...' : 'Unduh Kedua Sisi Sekaligus (PNG)'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* 6. Lembar Cetak Khusus (@media print) */}
-      <div id="kta-print-sheet" className="hidden">
-        <div className="print-content-wrapper">
-          <div className="print-header">
-            <h1 className="print-title">KARTU TANDA ANGGOTA PERPUSTAKAAN</h1>
-            <p className="print-subtitle">DINAS ARSIP DAN PERPUSTAKAAN DAERAH KABUPATEN BULELENG</p>
-          </div>
-
-          <div className="print-cards-grid">
-            <div className="print-card-item">
-              <span className="print-card-label">TAMPAK DEPAN</span>
-              <div className="print-card-box">
-                <KtaFront
-                  memberNo={memberNo}
-                  name={name}
-                  photo={photo}
-                  createdAt={profileData?.created_at}
-                  locationName="Perpustakaan Daerah"
-                />
-              </div>
-            </div>
-
-            <div className="print-card-item">
-              <span className="print-card-label">TAMPAK BELAKANG</span>
-              <div className="print-card-box">
-                <KtaBack />
-              </div>
-            </div>
-          </div>
-
-          <div className="print-footer">
-            <p>Portal Resmi Perpustakaan Daerah Kabupaten Buleleng (ATLAS) • #{memberNo} • {name}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Global CSS Khusus Pencetakan */}
-      <style>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 10mm;
-          }
-          body {
-            background: white !important;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          #kta-print-sheet,
-          #kta-print-sheet * {
-            visibility: visible !important;
-          }
-          #kta-print-sheet {
-            display: block !important;
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 10mm !important;
-            background: white !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-content-wrapper {
-            max-width: 190mm;
-            margin: 0 auto;
-            text-align: center;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-          }
-          .print-header {
-            margin-bottom: 8mm;
-            border-bottom: 2px solid #002B66;
-            padding-bottom: 4mm;
-          }
-          .print-title {
-            font-size: 16pt;
-            font-weight: 800;
-            color: #002B66;
-            margin: 0;
-            letter-spacing: 0.5px;
-          }
-          .print-subtitle {
-            font-size: 10pt;
-            font-weight: 600;
-            color: #475569;
-            margin: 2mm 0 0 0;
-          }
-          .print-cards-grid {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 10mm;
-            margin: 8mm 0;
-          }
-          .print-card-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .print-card-label {
-            font-size: 8pt;
-            font-weight: 700;
-            color: #64748b;
-            margin-bottom: 3mm;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-          .print-card-box {
-            width: 85.6mm;
-            height: 54.2mm;
-            border-radius: 3.18mm;
-            overflow: hidden;
-            border: 0.5pt solid #cbd5e1;
-            box-shadow: none;
-          }
-          .print-footer {
-            margin-top: 10mm;
-            border-top: 1px dashed #cbd5e1;
-            padding-top: 4mm;
-            font-size: 8pt;
-            color: #64748b;
-          }
-        }
-      `}</style>
     </div>
   )
 }

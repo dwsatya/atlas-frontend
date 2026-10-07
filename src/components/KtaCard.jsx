@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import ktaDepanTemplate from '../assets/KTA Depan Template.png'
 import ktaBelakang from '../assets/KTA Belakang.png'
+import { resolvePhotoUrl } from '../utils/ktaImageGenerator'
 
 /**
  * Code 128 (Subset B) SVG Barcode Generator
@@ -79,8 +80,14 @@ export function KtaFront({
   locationName = 'Perpustakaan Daerah',
   className = '',
 }) {
+  const [imgError, setImgError] = useState(false)
   const validUntil = useMemo(() => formatValidityDate(createdAt), [createdAt])
   const barcodeData = useMemo(() => generateCode128(memberNo), [memberNo])
+  const resolvedPhoto = useMemo(() => resolvePhotoUrl(photo), [photo])
+
+  useEffect(() => {
+    setImgError(false)
+  }, [resolvedPhoto])
 
   return (
     <div
@@ -96,9 +103,9 @@ export function KtaFront({
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
 
-      {/* 1. Foto Anggota (Presisi menutupi kotak abu-abu: left 7.07%, top 34.43%, w 22.61%, h 34.28%) */}
+      {/* 1. Pasfoto Anggota 2:3 (Area template ditutup putih, foto di-center dengan rasio 2:3) */}
       <div
-        className="absolute overflow-hidden rounded-[2px] flex items-center justify-center bg-[#d9d9d9] shadow-inner"
+        className="absolute flex items-center justify-center bg-white overflow-hidden rounded-[2px]"
         style={{
           left: '7.07%',
           top: '34.43%',
@@ -106,33 +113,33 @@ export function KtaFront({
           height: '34.28%',
         }}
       >
-        {photo ? (
-          <img
-            src={photo}
-            alt={name}
-            className="w-full h-full object-cover object-center"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center text-center p-1 text-slate-500 font-medium leading-tight">
-            <svg
-              className="w-[4cqw] h-[4cqw] text-slate-400 mb-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span style={{ fontSize: '1.6cqw' }}>Foto Anggota</span>
-          </div>
-        )}
+        <div className="h-full aspect-[2/3] overflow-hidden rounded-[2px] shadow-xs border border-slate-300/80 bg-slate-100 flex items-center justify-center">
+          {resolvedPhoto && !imgError ? (
+            <img
+              src={resolvedPhoto}
+              alt={name}
+              className="w-full h-full object-cover object-top"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center p-1 text-slate-500 font-medium leading-tight">
+              <svg
+                className="w-[3cqw] h-[3cqw] text-slate-400 mb-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span style={{ fontSize: '1.2cqw' }}>Pasfoto 2:3</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 2. Text Data Anggota (Tepat di sebelah kanan tanda titik dua ':' pada x=540px / 53.8%) */}
@@ -264,6 +271,7 @@ export default function KtaCard({
   createdAt = null,
   locationName = 'Perpustakaan Daerah',
   onPrint = null,
+  onDownload = null,
 }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -274,6 +282,14 @@ export default function KtaCard({
     navigator.clipboard.writeText(memberNo)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDownloadClick = () => {
+    if (onDownload) {
+      onDownload()
+    } else if (onPrint) {
+      onPrint()
+    }
   }
 
   return (
@@ -397,27 +413,22 @@ export default function KtaCard({
             <span>{copied ? 'Tersalin!' : 'Salin Nomor'}</span>
           </button>
 
-          {/* Tombol Cetak KTA */}
+          {/* Tombol Unduh KTA */}
           <button
             type="button"
-            onClick={() => {
-              if (onPrint) {
-                onPrint()
-              } else {
-                window.print()
-              }
-            }}
+            onClick={handleDownloadClick}
             className="flex-1 sm:flex-initial py-2 px-4 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-            title="Cetak Kartu Tanda Anggota"
+            title="Unduh Gambar Kartu Tanda Anggota"
           >
             <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            <span>Cetak KTA</span>
+            <span>Unduh KTA</span>
           </button>
         </div>
       </div>
     </div>
   )
 }
+
 
