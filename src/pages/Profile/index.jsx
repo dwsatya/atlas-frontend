@@ -6,6 +6,9 @@ import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
 import KtaCard, { KtaFront, KtaBack } from '../../components/KtaCard'
 import { resolvePhotoUrl, downloadKtaImage } from '../../utils/ktaImageGenerator'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+
 
 function formatDateForInput(dateVal) {
   if (!dateVal) return ''
@@ -23,7 +26,7 @@ function formatDateForInput(dateVal) {
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { user, logout, login } = useAuth()
+  const { user, logout, login, isAuthenticated } = useAuth()
 
   const [profileData, setProfileData] = useState(user || null)
   const [loading, setLoading] = useState(false)
@@ -236,56 +239,9 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-500 selection:text-white flex flex-col justify-between">
-      {/* 1. Header / Navbar */}
-      <header className="bg-[#00255c] text-white sticky top-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          {/* Logo Container */}
-          <div
-            className="bg-white rounded-2xl px-4 py-2 flex items-center shadow-md cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            <img src={logoatlas} alt="ATLAS Logo" className="h-9 sm:h-10 object-contain" />
-          </div>
+      {/* 1. Header / Navbar Terpadu */}
+      <Navbar />
 
-          {/* Navigation Links */}
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white/80 hover:text-white transition-colors cursor-pointer"
-            >
-              Beranda
-            </button>
-            <button
-              onClick={() => navigate('/opac')}
-              className="text-white/80 hover:text-white transition-colors cursor-pointer"
-            >
-              OPAC / Katalog
-            </button>
-
-            {/* Profile Active Badge */}
-            <div className="bg-white/10 border border-white/20 text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Profil Saya</span>
-            </div>
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="bg-rose-500/20 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-400/30 px-4 py-2 rounded-full font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span>Keluar</span>
-            </button>
-          </nav>
-        </div>
-      </header>
 
       {/* 2. Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-10 flex-1 w-full space-y-8">
@@ -322,6 +278,23 @@ export default function Profile() {
                 />
               </svg>
               <span>Cari Buku di OPAC</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-4 py-2.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Keluar dari akun Anda"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span>Keluar</span>
             </button>
           </div>
         </div>
@@ -781,18 +754,8 @@ export default function Profile() {
         </div>
       </main>
 
-      {/* 4. Footer */}
-      <footer className="bg-[#001D48] text-white py-6 border-t border-[#001738] mt-12 text-center text-xs text-slate-400">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng (ATLAS)</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-blue-300 hover:text-white transition-colors cursor-pointer"
-          >
-            Kembali ke Beranda ATLAS
-          </button>
-        </div>
-      </footer>
+      {/* 4. Footer Section Terpadu */}
+      <Footer />
 
       {/* 5. Modal Unduh KTA Gambar (PNG) */}
       {showPrintModal && (
