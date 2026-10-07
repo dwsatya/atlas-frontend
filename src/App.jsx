@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute'
 import LandingPage from './pages/LandingPage'
+import Opac from './pages/Opac'
 import LoginUser from './pages/LoginUser'
 import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
@@ -12,6 +13,10 @@ export default function App() {
       {/* Landing Page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+
+      {/* OPAC / Katalog Route */}
+      <Route path="/opac" element={<Opac />} />
+      <Route path="/katalog" element={<Opac />} />
 
       {/* Public Login Routes */}
       <Route path="/login" element={<LoginUser />} />
