@@ -51,7 +51,13 @@ export default function Dashboard() {
             Anda berhasil mengakses halaman privat aplikasi ATLAS. Sistem routing terlindungi dengan <code className="text-indigo-400">react-router-dom</code> dan <code className="text-indigo-400">PrivateRoute</code>.
           </p>
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/admin/entri-katalog')}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-sm font-bold text-white shadow-lg shadow-indigo-600/30 transition-all duration-200 cursor-pointer flex items-center gap-2"
+            >
+              <span>📖 Buka Entri Katalog Admin</span>
+            </button>
             <button
               onClick={() => setCount((c) => c + 1)}
               className="px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-slate-200 hover:bg-slate-800 hover:border-indigo-500/40 transition-all duration-200"

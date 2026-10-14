@@ -8,6 +8,7 @@ import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import AdminEntriKatalog from './pages/AdminEntriKatalog'
 
 export default function App() {
   return (
@@ -15,6 +16,11 @@ export default function App() {
       {/* Landing Page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+
+      {/* Admin Entri Katalog Routes */}
+      <Route path="/admin/entri-katalog" element={<AdminEntriKatalog />} />
+      <Route path="/admin/katalog" element={<AdminEntriKatalog />} />
+      <Route path="/entri-katalog" element={<AdminEntriKatalog />} />
 
       {/* OPAC / Katalog Route */}
       <Route path="/opac" element={<Opac />} />
