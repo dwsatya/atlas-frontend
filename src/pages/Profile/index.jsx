@@ -208,10 +208,10 @@ export default function Profile() {
   const placeOfBirth = profileData?.place_of_birth || '-'
   const dateOfBirth = profileData?.date_of_birth
     ? new Date(profileData.date_of_birth).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
     : '-'
   const ktpAddress = profileData?.ktp_address || '-'
   const residentialAddress = profileData?.residential_address || '-'
@@ -591,11 +591,10 @@ export default function Profile() {
                             key={cat}
                             type="button"
                             onClick={() => setEditForm({ ...editForm, job_category: cat })}
-                            className={`py-2 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${
-                              editForm.job_category === cat
+                            className={`py-2 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${editForm.job_category === cat
                                 ? 'bg-[#002B66] text-white border-[#002B66] shadow-xs'
                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                            }`}
+                              }`}
                           >
                             {cat}
                           </button>
@@ -686,9 +685,8 @@ export default function Profile() {
                         value={sameAddress ? editForm.residential_address : editForm.ktp_address}
                         onChange={(e) => setEditForm({ ...editForm, ktp_address: e.target.value })}
                         placeholder="Masukkan alamat sesuai kartu identitas (KTP)..."
-                        className={`w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-xs focus:ring-2 focus:ring-[#002B66] focus:border-transparent outline-none transition-all ${
-                          sameAddress ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-xs focus:ring-2 focus:ring-[#002B66] focus:border-transparent outline-none transition-all ${sameAddress ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'
+                          }`}
                       />
                     </div>
                   </div>
@@ -841,33 +839,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Informasi & Petunjuk Unduh Gambar */}
-              <div className="rounded-2xl bg-blue-50/80 border border-blue-200/80 p-4 space-y-2 text-xs text-blue-950">
-                <div className="font-bold flex items-center gap-2 text-[#002B66]">
-                  <svg className="w-4 h-4 text-[#002B66]" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>Informasi Berkas Gambar KTA:</span>
-                </div>
-                <ul className="list-disc list-inside space-y-1 text-slate-700 text-[11px] leading-relaxed">
-                  <li>
-                    Kartu diunduh langsung dalam format <strong>gambar PNG resolusi tinggi (1004 × 636 piksel)</strong> tanpa dialog PDF peramban.
-                  </li>
-                  <li>
-                    Pasfoto ditampilkan rapi dalam proporsi standar <strong>2:3 portrait</strong>.
-                  </li>
-                  <li>
-                    Garis barcode dibuat presisi dan jelas agar dapat langsung dipindai oleh barcode scanner di perpustakaan.
-                  </li>
-                  <li>
-                    Berkas gambar ini siap dicetak langsung pada kertas PVC card atau disimpan di galeri smartphone Anda.
-                  </li>
-                </ul>
-              </div>
             </div>
 
             {/* Modal Actions */}

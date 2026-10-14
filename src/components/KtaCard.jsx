@@ -304,32 +304,6 @@ export default function KtaCard({
             ✓ Aktif
           </span>
         </div>
-
-        {/* Tab Switcher: Depan / Belakang */}
-        <div className="bg-slate-200/80 p-0.5 rounded-xl flex items-center text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => setIsFlipped(false)}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-              !isFlipped
-                ? 'bg-white text-[#002B66] shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Depan
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsFlipped(true)}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-              isFlipped
-                ? 'bg-white text-[#002B66] shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Belakang
-          </button>
-        </div>
       </div>
 
       {/* 2. 3D Flip Card Container */}
@@ -388,17 +362,6 @@ export default function KtaCard({
         </span>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Tombol Balik Kartu */}
-          <button
-            type="button"
-            onClick={() => setIsFlipped((prev) => !prev)}
-            className="flex-1 sm:flex-initial py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#002B66] font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>{isFlipped ? 'Lihat Depan' : 'Balik Kartu'}</span>
-          </button>
 
           {/* Tombol Salin Nomor */}
           <button
