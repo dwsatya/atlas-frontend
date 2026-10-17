@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import logo from '../../assets/Logo.png'
 import {
   LayoutDashboard,
   BookOpen,
@@ -145,35 +146,24 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#071739] text-white flex flex-col transition-transform duration-300 ease-in-out border-r border-[#0e275c] lg:translate-x-0 ${
-          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#0B2256] text-white flex flex-col transition-transform duration-300 ease-in-out border-r border-[#112d6e] lg:translate-x-0 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+          }`}
       >
         {/* Brand Header */}
-        <div className="px-5 py-5 border-b border-[#0f2a63] flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            {/* Geometric Diamond Logo */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00A389] via-[#0084FF] to-[#6366F1] flex items-center justify-center p-2 shadow-lg shadow-blue-900/30 group-hover:scale-105 transition-transform">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-full h-full text-white"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="12 2 2 7 12 12 22 7 12 2" fill="white" fillOpacity="0.25" />
-                <polyline points="2 17 12 22 22 17" />
-                <polyline points="2 12 12 17 22 12" />
-              </svg>
-            </div>
+        <div className="px-4 py-4.5 border-b border-[#122e6e] flex items-center justify-between">
+          <Link to="/dashboard" className="flex items-center gap-2.5 group">
+            {/* Logo Image Asset (Tanpa background putih) */}
+            <img
+              src={logo}
+              alt="Logo Perpustakaan ATLAS"
+              className="w-9 h-9 object-contain shrink-0 group-hover:scale-105 transition-transform drop-shadow-xs"
+            />
 
             <div className="flex flex-col">
-              <span className="text-[13px] font-extrabold tracking-tight text-white leading-tight">
-                ATLAS V1.0 | DAPD Kab. Buleleng
+              <span className="text-[12px] font-bold tracking-tight text-white leading-tight">
+                ATLAS | DAPD Kab. Buleleng
               </span>
-              <span className="text-[10px] text-slate-400 font-medium leading-normal tracking-wide">
+              <span className="text-[9.5px] text-[#8DA6D2] font-normal leading-normal">
                 Aplikasi Terpadu Layanan Arsip &amp; Sirkulasi
               </span>
             </div>
@@ -190,10 +180,10 @@ export default function AdminSidebar({ isOpen, onClose }) {
         </div>
 
         {/* Navigation Menus (Scrollable) */}
-        <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700">
+        <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-5 scrollbar-thin scrollbar-thumb-slate-700">
           {menuSections.map((section, sIdx) => (
             <div key={sIdx} className="space-y-1">
-              <div className="px-3 pb-1 text-[10px] font-extrabold tracking-wider text-slate-400/90 uppercase">
+              <div className="px-3 pb-1 text-[10px] font-bold tracking-wider text-[#7995C5] uppercase">
                 {section.title}
               </div>
 
@@ -209,40 +199,24 @@ export default function AdminSidebar({ isOpen, onClose }) {
                       onClick={() => {
                         if (window.innerWidth < 1024) onClose()
                       }}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all group ${
-                        active
-                          ? 'bg-white text-[#071739] font-bold shadow-md shadow-black/10'
-                          : 'text-slate-300 hover:text-white hover:bg-white/5'
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all group ${active
+                          ? 'bg-white text-[#0B2256] font-bold shadow-xs'
+                          : 'text-[#C7D7F2] hover:text-white hover:bg-white/10 font-normal'
+                        }`}
                     >
                       <Icon
-                        className={`w-4 h-4 shrink-0 transition-colors ${
-                          active
-                            ? 'text-[#071739]'
-                            : 'text-slate-400 group-hover:text-white'
-                        }`}
+                        className={`w-4 h-4 shrink-0 transition-colors ${active
+                            ? 'text-[#0B2256]'
+                            : 'text-[#8DA6D2] group-hover:text-white'
+                          }`}
                       />
                       <span className="truncate flex-1">{item.name}</span>
-                      {active && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00A389]" />
-                      )}
                     </Link>
                   )
                 })}
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Footer Brand / Version */}
-        <div className="p-3.5 border-t border-[#0f2a63] bg-[#05112b] text-[11px] text-slate-400 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-medium text-slate-300">Server Aktif</span>
-          </div>
-          <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
-            v1.0.4-prod
-          </span>
         </div>
       </aside>
     </>
