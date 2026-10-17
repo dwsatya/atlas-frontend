@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Save,
   Copy,
@@ -19,11 +20,17 @@ import {
   ChevronDown,
   Barcode,
   Layers,
+  Loader2,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import Marc21Modal from './Marc21Modal'
 import ImportExcelModal from './ImportExcelModal'
 import CopyCatalogModal from './CopyCatalogModal'
+import {
+  createAdminCatalog,
+  updateAdminCatalog,
+  fetchAdminCatalogById,
+} from '../../services/api'
 
 export default function AdminEntriKatalog() {
   // Modal states
@@ -116,6 +123,74 @@ export default function AdminEntriKatalog() {
     createdAtFormatted: '16/09/2026 14:18',
     status: 'Draft Siap Eksemplar',
   })
+
+  // URL Query Params & Editing State
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const [editingCatalogId, setEditingCatalogId] = useState(
+    searchParams.get('id') || null
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingExisting, setIsLoadingExisting] = useState(false)
+
+  // Fetch logged in Admin name from localStorage if available
+  useEffect(() => {
+    const cachedAdmin = localStorage.getItem('atlas_admin_user') || localStorage.getItem('atlas_user')
+    if (cachedAdmin) {
+      try {
+        const parsed = JSON.parse(cachedAdmin)
+        if (parsed.name) {
+          setFormData((prev) => ({ ...prev, authorAdmin: parsed.name }))
+        }
+      } catch (e) {
+        console.warn('Could not parse cached admin user:', e)
+      }
+    }
+  }, [])
+
+  // Load existing catalog if 'id' query param is present
+  useEffect(() => {
+    const id = searchParams.get('id')
+    if (id) {
+      setEditingCatalogId(id)
+      const loadCatalogData = async () => {
+        setIsLoadingExisting(true)
+        try {
+          const res = await fetchAdminCatalogById(id)
+          const data = res?.data
+          if (data) {
+            setFormData((prev) => ({
+              ...prev,
+              title: data.title || '',
+              subtitle: data.subtitle || '',
+              statementOfResponsibility: data.statement_of_responsibility || '',
+              mainAuthor: data.author_main || '',
+              publishCity: data.publish_city || '',
+              publisher: data.publisher || '',
+              publishYear: data.publish_year || '',
+              edition: data.edition || '',
+              pages: data.pages || '',
+              dimension: data.dimension || '',
+              isbn: data.isbn || '',
+              ddcNumber: data.ddc_number || '-',
+              callNumber: data.catalog_call_number || '-',
+              notes: data.abstract || '',
+              materialType: data.material_type || prev.materialType,
+              isQuarantine: Boolean(data.is_quarantine),
+              status: data.total_copies > 0 ? 'Aktif di Rak' : 'Draft Siap Eksemplar',
+            }))
+            showToast(`Katalog #${id} ("${data.title}") berhasil dimuat dari database!`)
+          }
+        } catch (err) {
+          console.error('Failed to load existing catalog:', err)
+          showToast(`Gagal memuat katalog #${id} dari server`, 'error')
+        } finally {
+          setIsLoadingExisting(false)
+        }
+      }
+      loadCatalogData()
+    }
+  }, [searchParams])
 
   // Autosave timer simulation
   const [lastSavedMinutes, setLastSavedMinutes] = useState(1)
@@ -237,38 +312,126 @@ export default function AdminEntriKatalog() {
     showToast(`No. Panggil otomatis dibuat: ${generated}`)
   }
 
-  // Save Catalog Handler
-  const handleSaveCatalog = () => {
+  // Save Catalog Handler (Connects directly to Backend API & Database)
+  const handleSaveCatalog = async (silent = false) => {
     if (!formData.title.trim()) {
       showToast('Judul Utama wajib diisi sebelum menyimpan!', 'error')
-      return
+      return false
     }
 
-    localStorage.setItem('atlas_last_catalog_entry', JSON.stringify(formData))
-    setLastSavedMinutes(0)
-    showToast('Katalog berhasil disimpan ke database!', 'success')
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        material_type: formData.materialType.includes(' (')
+          ? formData.materialType.split(' (')[0]
+          : formData.materialType,
+        media_type: 'Tercetak',
+        title:
+          formData.prefixWord && formData.prefixWord !== '-- Tidak diawali --'
+            ? `${formData.prefixWord} ${formData.title.trim()}`
+            : formData.title.trim(),
+        subtitle: formData.subtitle?.trim() || null,
+        statement_of_responsibility: formData.statementOfResponsibility?.trim() || null,
+        author_main: formData.mainAuthor?.trim() || null,
+        author_corporate:
+          formData.mainAuthorCategory === 'Badan Korporasi'
+            ? formData.mainAuthor?.trim()
+            : null,
+        author_additional_person:
+          formData.additionalAuthors
+            .filter((a) => a.category === 'Nama Orang' && a.name.trim())
+            .map((a) => a.name.trim())
+            .join('; ') || null,
+        author_additional_corporate:
+          formData.additionalAuthors
+            .filter((a) => a.category === 'Badan Korporasi' && a.name.trim())
+            .map((a) => a.name.trim())
+            .join('; ') || null,
+        edition: formData.edition?.trim() || null,
+        publish_city: formData.publishCity?.trim() || null,
+        publisher: formData.publisher?.trim() || null,
+        publish_year: formData.publishYear?.trim() || null,
+        pages: formData.pages?.trim() || null,
+        dimension: formData.dimension?.trim() || null,
+        isbn: formData.isbn?.trim() || null,
+        ddc_number:
+          formData.ddcNumber && formData.ddcNumber !== '-'
+            ? formData.ddcNumber.trim()
+            : null,
+        catalog_call_number:
+          formData.callNumber && formData.callNumber !== '-'
+            ? formData.callNumber.trim()
+            : null,
+        subject_topic:
+          formData.subjects
+            .map((s) => s.name?.trim())
+            .filter(Boolean)
+            .join('; ') || null,
+        language: formData.language.includes('-')
+          ? formData.language.split(' - ')[1]
+          : formData.language,
+        abstract: formData.notes?.trim() || null,
+        is_quarantine: Boolean(formData.isQuarantine),
+      }
+
+      let res
+      if (editingCatalogId) {
+        res = await updateAdminCatalog(editingCatalogId, payload)
+      } else {
+        res = await createAdminCatalog(payload)
+        const newId = res?.data?.catalog?.id || res?.data?.id
+        if (newId) {
+          setEditingCatalogId(newId)
+        }
+      }
+
+      localStorage.setItem('atlas_last_catalog_entry', JSON.stringify(formData))
+      setLastSavedMinutes(0)
+      if (!silent) {
+        showToast(
+          editingCatalogId
+            ? `Perubahan katalog #${editingCatalogId} berhasil disimpan ke database!`
+            : `Katalog "${payload.title}" berhasil disimpan ke database!`,
+          'success'
+        )
+      }
+      return true
+    } catch (err) {
+      console.error('Error saving catalog:', err)
+      showToast(err?.message || 'Gagal menyimpan katalog ke database!', 'error')
+      return false
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Complete / Selesai Handler
-  const handleFinish = () => {
-    handleSaveCatalog()
-    showToast('Penyusunan Entri Katalog selesai dan siap dieksemplarkan!', 'success')
+  const handleFinish = async () => {
+    const success = await handleSaveCatalog(true)
+    if (success) {
+      showToast('Penyusunan Entri Katalog selesai dan tersimpan di database!', 'success')
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1500)
+    }
   }
 
   // Import success callback
   const handleImportSuccess = (importedData) => {
-    setFormData((prev) => ({
-      ...prev,
-      ...importedData,
-    }))
-    showToast('Metadata berhasil diimpor ke formulir!')
+    if (importedData && importedData.title) {
+      setFormData((prev) => ({
+        ...prev,
+        ...importedData,
+      }))
+    }
+    showToast('Impor selesai! Data bibliografis berhasil dimuat ke database.', 'success')
   }
 
   // Copy from another catalog callback
   const handleSelectCopyCatalog = (catalog) => {
     setFormData((prev) => ({
       ...prev,
-      title: catalog.title,
+      title: catalog.title || '',
       subtitle: catalog.subtitle || '',
       statementOfResponsibility: catalog.statementOfResponsibility || '',
       mainAuthor: catalog.mainAuthor || '',
@@ -283,7 +446,7 @@ export default function AdminEntriKatalog() {
       callNumber: catalog.callNumber || '-',
       notes: catalog.notes || '',
     }))
-    showToast(`Data katalog "${catalog.title}" berhasil disalin!`)
+    showToast(`Metadata katalog "${catalog.title}" berhasil disalin dari database!`)
   }
 
   return (
@@ -356,11 +519,21 @@ export default function AdminEntriKatalog() {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Simpan */}
             <button
-              onClick={handleSaveCatalog}
-              className="px-3.5 py-1.5 bg-[#007A64] hover:bg-[#006452] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+              onClick={() => handleSaveCatalog(false)}
+              disabled={isSubmitting || isLoadingExisting}
+              className="px-3.5 py-1.5 bg-[#007A64] hover:bg-[#006452] disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>Simpan</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{editingCatalogId ? 'Perbarui' : 'Simpan'}</span>
+                </>
+              )}
             </button>
 
             {/* Salin Judul */}
@@ -384,7 +557,8 @@ export default function AdminEntriKatalog() {
             {/* Selesai */}
             <button
               onClick={handleFinish}
-              className="px-3 py-1.5 bg-[#FEF3EB] hover:bg-amber-100 text-[#D97706] border border-[#FED7AA] text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer"
+              disabled={isSubmitting || isLoadingExisting}
+              className="px-3 py-1.5 bg-[#FEF3EB] hover:bg-amber-100 disabled:opacity-50 text-[#D97706] border border-[#FED7AA] text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Selesai</span>
@@ -1292,18 +1466,29 @@ export default function AdminEntriKatalog() {
             <button
               type="button"
               onClick={handleFinish}
-              className="px-4 py-1.5 bg-[#FEE8D6] hover:bg-amber-200 text-[#C2410C] text-xs font-semibold rounded-lg transition cursor-pointer"
+              disabled={isSubmitting || isLoadingExisting}
+              className="px-4 py-1.5 bg-[#FEE8D6] hover:bg-amber-200 disabled:opacity-50 text-[#C2410C] text-xs font-semibold rounded-lg transition cursor-pointer"
             >
               Selesai
             </button>
 
             <button
               type="button"
-              onClick={handleSaveCatalog}
-              className="px-4 py-1.5 bg-[#007A64] hover:bg-[#006452] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+              onClick={() => handleSaveCatalog(false)}
+              disabled={isSubmitting || isLoadingExisting}
+              className="px-4 py-1.5 bg-[#007A64] hover:bg-[#006452] disabled:opacity-50 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
             >
-              <Check className="w-3.5 h-3.5 text-white" />
-              <span>Simpan Katalog</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>Menyimpan ke Database...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 text-white" />
+                  <span>{editingCatalogId ? 'Perbarui Katalog' : 'Simpan Katalog'}</span>
+                </>
+              )}
             </button>
           </div>
         </div>
