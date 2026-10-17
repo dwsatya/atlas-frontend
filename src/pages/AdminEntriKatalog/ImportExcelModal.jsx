@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { X, Upload, FileSpreadsheet, Download, CheckCircle2, AlertCircle } from 'lucide-react'
+import { X, Upload, FileSpreadsheet, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { importAdminCatalogExcel } from '../../services/api'
 
 export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
   const [dragOver, setDragOver] = useState(false)
@@ -14,46 +15,52 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
     setDragOver(false)
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setSelectedFile(e.dataTransfer.files[0])
+      setStatusMessage(null)
     }
   }
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0])
+      setStatusMessage(null)
     }
   }
 
-  const handleProcessImport = () => {
+  const handleProcessImport = async () => {
     if (!selectedFile) return
     setIsProcessing(true)
+    setStatusMessage(null)
 
-    // Simulate import processing
-    setTimeout(() => {
-      setIsProcessing(false)
+    try {
+      const res = await importAdminCatalogExcel(selectedFile)
+      const data = res?.data || {}
+      const summaryText = data.catalogs_created !== undefined
+        ? `Berhasil mengimpor ${data.catalogs_created} katalog baru dan ${data.collections_created || 0} eksemplar fisik ke database!`
+        : `File "${selectedFile.name}" berhasil diunggah dan disimpan ke database perpustakaan.`
+
       setStatusMessage({
         type: 'success',
-        text: `File "${selectedFile.name}" berhasil diunggah! 1 Katalog dimuat ke formulir entri.`,
+        text: summaryText,
       })
+
       if (onImportSuccess) {
-        onImportSuccess({
-          title: 'Metodologi Riset Terapan untuk Perpustakaan',
-          subtitle: 'Panduan Praktis Pengelolaan Data Koleksi Digital',
-          statementOfResponsibility: 'Ridwan Surasta, M.Hum. ; Editor: Komang Widiastuti',
-          mainAuthor: 'Surasta, Ridwan',
-          publisher: 'Penerbit Mahima',
-          publishCity: 'Singaraja',
-          publishYear: '2026',
-          isbn: '978-623-999-102-1',
-          ddcNumber: '025.04',
-          callNumber: '025.04 SUR m',
-        })
+        onImportSuccess(data)
       }
+
       setTimeout(() => {
         onClose()
         setStatusMessage(null)
         setSelectedFile(null)
-      }, 1400)
-    }, 1200)
+      }, 1800)
+    } catch (err) {
+      console.error('Import error:', err)
+      setStatusMessage({
+        type: 'error',
+        text: err?.message || 'Gagal memproses file Excel ke database.',
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -70,13 +77,13 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
                 Impor Data Excel / RDA
               </h3>
               <p className="text-xs text-blue-200">
-                Batch import atau impor otomatis metadata bibliografis
+                Batch import atau impor otomatis metadata bibliografis ke database
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition"
+            className="p-1.5 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -104,7 +111,7 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
             <input
               id="excelFileInput"
               type="file"
-              accept=".xlsx,.xls,.csv,.mrc"
+              accept=".xlsx,.xls,.csv"
               className="hidden"
               onChange={handleFileChange}
             />
@@ -118,7 +125,7 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
                 <div>
                   <p className="font-bold text-slate-800 text-sm">{selectedFile.name}</p>
                   <p className="text-slate-500 text-[11px]">
-                    {(selectedFile.size / 1024).toFixed(1)} KB • Siap diproses
+                    {(selectedFile.size / 1024).toFixed(1)} KB • Siap diproses ke server
                   </p>
                 </div>
               ) : (
@@ -127,7 +134,7 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
                     Tarik dan lepaskan file di sini
                   </p>
                   <p className="text-slate-500 text-[11px] mt-0.5">
-                    Mendukung format .XLSX, .XLS, .CSV, atau .MRC (ISO 2709)
+                    Mendukung format file spreadsheet .XLSX, .XLS, atau .CSV (maksimal 10 MB)
                   </p>
                 </div>
               )}
@@ -142,8 +149,12 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
                   : 'bg-red-50 text-red-800 border border-red-200'
               }`}
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{statusMessage.text}</span>
+              {statusMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              )}
+              <span className="leading-relaxed">{statusMessage.text}</span>
             </div>
           )}
 
@@ -156,11 +167,20 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
               </p>
             </div>
             <button
-              onClick={() => alert('Mengunduh template_entri_katalog_atlas.xlsx')}
-              className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-lg flex items-center gap-1.5 shrink-0"
+              onClick={() => {
+                const csvHeader = 'title,subtitle,statement_of_responsibility,author_main,publisher,publish_city,publish_year,isbn,ddc_number,catalog_call_number\n'
+                const blob = new Blob([csvHeader], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'template_entri_katalog_atlas.csv'
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-lg flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
             >
               <Download className="w-3.5 h-3.5 text-blue-600" />
-              <span>Unduh .XLSX</span>
+              <span>Unduh CSV</span>
             </button>
           </div>
         </div>
@@ -169,16 +189,24 @@ export default function ImportExcelModal({ isOpen, onClose, onImportSuccess }) {
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 text-xs">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold rounded-lg transition"
+            disabled={isProcessing}
+            className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold rounded-lg transition cursor-pointer"
           >
             Batal
           </button>
           <button
             disabled={!selectedFile || isProcessing}
             onClick={handleProcessImport}
-            className="px-5 py-2 bg-[#0B2559] hover:bg-[#07193c] disabled:opacity-50 text-white font-bold rounded-lg shadow-sm flex items-center gap-2 transition"
+            className="px-5 py-2 bg-[#0B2559] hover:bg-[#07193c] disabled:opacity-50 text-white font-bold rounded-lg shadow-sm flex items-center gap-2 transition cursor-pointer"
           >
-            {isProcessing ? 'Memproses...' : 'Proses Impor'}
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Memproses ke Database...</span>
+              </>
+            ) : (
+              <span>Proses Impor</span>
+            )}
           </button>
         </div>
       </div>

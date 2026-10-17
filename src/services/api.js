@@ -274,4 +274,214 @@ export async function updateProfilePhoto(file) {
   }
 }
 
+function getAdminToken() {
+  return localStorage.getItem('atlas_admin_token') || localStorage.getItem('atlas_token') || ''
+}
+
+export async function createAdminCatalog(catalogData) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/books`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(catalogData),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal menyimpan katalog (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error createAdminCatalog:', error)
+    throw error
+  }
+}
+
+export async function updateAdminCatalog(id, catalogData) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/books/${id}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(catalogData),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui katalog (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error updateAdminCatalog (${id}):`, error)
+    throw error
+  }
+}
+
+export async function fetchAdminCatalogs({ search = '', is_quarantine, page = 1, per_page = 15 } = {}) {
+  const token = getAdminToken()
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (is_quarantine !== undefined) params.append('is_quarantine', is_quarantine ? '1' : '0')
+  if (page) params.append('page', page)
+  if (per_page) params.append('per_page', per_page)
+
+  const url = `${API_BASE_URL}/v1/admin/books?${params.toString()}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mengambil daftar katalog admin (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error fetchAdminCatalogs:', error)
+    throw error
+  }
+}
+
+export async function fetchAdminCatalogById(id) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/books/${id}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mengambil detail katalog (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error fetchAdminCatalogById (${id}):`, error)
+    throw error
+  }
+}
+
+export async function deleteAdminCatalog(id) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/books/${id}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menghapus katalog (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error deleteAdminCatalog (${id}):`, error)
+    throw error
+  }
+}
+
+export async function importAdminCatalogExcel(file) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/books/import`
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal mengimpor file Excel (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error importAdminCatalogExcel:', error)
+    throw error
+  }
+}
+
 
