@@ -9,6 +9,7 @@ import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
+import LoginAdmin from './pages/LoginAdmin'
 
 export default function App() {
   return (
@@ -16,6 +17,11 @@ export default function App() {
       {/* Landing Page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+
+      {/* Admin Login Routes */}
+      <Route path="/admin/login" element={<LoginAdmin />} />
+      <Route path="/admin-login" element={<LoginAdmin />} />
+      <Route path="/login-admin" element={<LoginAdmin />} />
 
       {/* Admin Entri Katalog Routes */}
       <Route path="/admin/entri-katalog" element={<AdminEntriKatalog />} />

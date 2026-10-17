@@ -16,73 +16,54 @@ export default function AdminHeader({ onToggleSidebar }) {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/admin/login')
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200/90 shadow-xs h-16 px-4 sm:px-6 flex items-center justify-between">
-      {/* Left: Mobile Menu Trigger & Breadcrumbs */}
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 shadow-xs h-14 px-4 sm:px-6 flex items-center justify-between">
+      {/* Left: Mobile Menu Trigger (hidden on desktop to match screenshot) */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           aria-label="Buka Menu"
         >
           <Menu className="w-5 h-5" />
         </button>
-
-        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-          <span className="font-semibold text-slate-800">ATLAS DAPD</span>
-          <span>/</span>
-          <span className="text-slate-500">Pengelolaan Koleksi</span>
-          <span>/</span>
-          <span className="text-blue-700 font-semibold">Entri Katalog</span>
-        </div>
       </div>
 
       {/* Right: Status, Date, User Info */}
-      <div className="flex items-center gap-3 sm:gap-5">
+      <div className="flex items-center gap-4 sm:gap-6 ml-auto">
         {/* Status Online Pill */}
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs font-semibold">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="whitespace-nowrap">Sirkulasi Aktif (Online)</span>
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EAF7EE] border border-[#B6E8C7] text-[#059669] text-xs font-semibold shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-[#10B981]"></span>
+          <span className="whitespace-nowrap text-[11px] sm:text-xs">Sirkulasi Aktif (Online)</span>
         </div>
 
         {/* Date Display */}
-        <div className="hidden md:block text-xs font-medium text-slate-600 whitespace-nowrap">
+        <div className="hidden sm:block text-xs font-medium text-slate-600 whitespace-nowrap">
           {currentDateFormatted}
         </div>
-
-        <div className="hidden md:block h-5 w-px bg-slate-200"></div>
 
         {/* User Profile */}
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-50 transition-colors text-left"
+            className="flex items-center gap-2.5 py-1 rounded-lg hover:bg-slate-50 transition-colors text-left cursor-pointer"
           >
             <div className="text-right hidden sm:block">
               <div className="text-xs font-bold text-slate-800 leading-tight">
                 {adminName}
               </div>
-              <div className="text-[10px] text-slate-500 leading-tight">
+              <div className="text-[10px] text-slate-400 font-medium leading-tight">
                 {adminRole}
               </div>
             </div>
 
-            <div className="w-9 h-9 rounded-full bg-[#071739] text-white flex items-center justify-center font-bold text-xs ring-2 ring-slate-100 shadow-xs">
-              {adminName
-                .split(' ')
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase() || 'AD'}
+            {/* Circular user avatar with outline person icon matching screenshot */}
+            <div className="w-8 h-8 rounded-full border border-slate-300 bg-white text-slate-700 flex items-center justify-center shadow-2xs">
+              <User className="w-4.5 h-4.5 text-slate-600 stroke-[1.8]" />
             </div>
-
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
           {/* User Dropdown */}

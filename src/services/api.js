@@ -126,6 +126,39 @@ export async function loginMember({ email, password }) {
 
 export const loginUser = loginMember
 
+export async function loginAdmin({ username, password }) {
+  const url = `${API_BASE_URL}/auth/admin/login`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Login admin gagal (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error loginAdmin:', error)
+    throw error
+  }
+}
+
 export function getGoogleLoginUrl() {
   return `${BACKEND_BASE_URL}/auth/google`
 }
