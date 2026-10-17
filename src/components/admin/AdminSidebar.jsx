@@ -131,6 +131,13 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/entri-katalog'
       )
     }
+    if (itemPath === '/dashboard') {
+      return (
+        currentPath === '/dashboard' ||
+        currentPath === '/admin/dashboard' ||
+        currentPath === '/admin'
+      )
+    }
     return currentPath === itemPath
   }
 

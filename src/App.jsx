@@ -60,6 +60,22 @@ export default function App() {
         }
       />
       <Route
+        path="/admin/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <PrivateRoute>
