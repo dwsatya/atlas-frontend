@@ -131,6 +131,14 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/entri-katalog'
       )
     }
+    if (itemPath === '/admin/koleksi') {
+      return (
+        currentPath === '/admin/koleksi' ||
+        currentPath === '/admin/daftar-koleksi' ||
+        currentPath === '/admin/koleksi-eksemplar' ||
+        currentPath === '/admin/daftar-katalog'
+      )
+    }
     if (itemPath === '/dashboard') {
       return (
         currentPath === '/dashboard' ||

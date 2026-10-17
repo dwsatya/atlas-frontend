@@ -9,6 +9,7 @@ import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
+import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import LoginAdmin from './pages/LoginAdmin'
 
 export default function App() {
@@ -27,6 +28,13 @@ export default function App() {
       <Route path="/admin/entri-katalog" element={<AdminEntriKatalog />} />
       <Route path="/admin/katalog" element={<AdminEntriKatalog />} />
       <Route path="/entri-katalog" element={<AdminEntriKatalog />} />
+
+      {/* Admin Daftar Koleksi & Eksemplar Routes */}
+      <Route path="/admin/koleksi" element={<AdminDaftarKoleksi />} />
+      <Route path="/admin/daftar-koleksi" element={<AdminDaftarKoleksi />} />
+      <Route path="/admin/koleksi-eksemplar" element={<AdminDaftarKoleksi />} />
+      <Route path="/admin/daftar-katalog" element={<AdminDaftarKoleksi />} />
+      <Route path="/daftar-koleksi" element={<AdminDaftarKoleksi />} />
 
       {/* OPAC / Katalog Route */}
       <Route path="/opac" element={<Opac />} />
