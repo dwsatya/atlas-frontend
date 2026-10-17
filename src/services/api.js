@@ -447,6 +447,120 @@ export async function deleteAdminCatalog(id) {
   }
 }
 
+export async function fetchAdminCollections({
+  search = '',
+  status = '',
+  material_type = '',
+  room_location = '',
+  year = '',
+  page = 1,
+  per_page = 10,
+} = {}) {
+  const token = getAdminToken()
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (status) params.append('status', status)
+  if (material_type) params.append('material_type', material_type)
+  if (room_location) params.append('room_location', room_location)
+  if (year) params.append('year', year)
+  if (page) params.append('page', page)
+  if (per_page) params.append('per_page', per_page)
+
+  const url = `${API_BASE_URL}/v1/admin/collections?${params.toString()}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mengambil daftar koleksi eksemplar (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error fetchAdminCollections:', error)
+    throw error
+  }
+}
+
+export async function updateAdminCollection(collectionId, collectionData) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/collections/${collectionId}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(collectionData),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui eksemplar (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error updateAdminCollection (${collectionId}):`, error)
+    throw error
+  }
+}
+
+export async function deleteAdminCollection(collectionId) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/collections/${collectionId}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menghapus eksemplar (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error deleteAdminCollection (${collectionId}):`, error)
+    throw error
+  }
+}
+
 export async function importAdminCatalogExcel(file) {
   const token = getAdminToken()
   const url = `${API_BASE_URL}/v1/admin/books/import`
