@@ -63,7 +63,7 @@ export default function FormDataDiri() {
     }, [tokenParam, userParam, login])
 
     const handlePekerjaanChange = (option) => {
-        setPekerjaan(pekerjaan === option ? '' : option)
+        setPekerjaan(option)
     }
 
     const handleSameAddressChange = (checked) => {
@@ -439,13 +439,15 @@ export default function FormDataDiri() {
                                 {['Umum', 'Pelajar', 'Mahasiswa'].map((option) => (
                                     <label
                                         key={option}
-                                        className="flex items-center gap-2 text-sm font-semibold text-[#032360] cursor-pointer"
+                                        className="flex items-center gap-2 text-sm font-semibold text-[#032360] cursor-pointer hover:text-[#002B66] transition-colors"
                                     >
                                         <input
-                                            type="checkbox"
+                                            type="radio"
+                                            name="pekerjaan"
+                                            value={option}
                                             checked={pekerjaan === option}
                                             onChange={() => handlePekerjaanChange(option)}
-                                            className="w-4 h-4 rounded border-slate-300 accent-[#002B66] cursor-pointer"
+                                            className="w-4 h-4 text-[#002B66] border-slate-300 focus:ring-[#002B66] accent-[#002B66] cursor-pointer"
                                         />
                                         <span>{option}</span>
                                     </label>
