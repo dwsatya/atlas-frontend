@@ -77,28 +77,28 @@ export default function AdminEntriKatalog() {
     ],
 
     // Card 3: Penerbitan (Impresum)
-    publishCity: 'Singaraja',
-    publisher: 'Erlangga',
-    publishYear: '2026',
+    publishCity: '',
+    publisher: '',
+    publishYear: '',
 
     // Card 4: Deskripsi Fisik (Kolasi)
-    pages: 'xxiv, 312 hlm.',
-    illustrations: 'ilus. , tabel, foto',
-    dimension: '24 cm',
-    accompanyingMaterial: '-',
+    pages: '',
+    illustrations: '',
+    dimension: '',
+    accompanyingMaterial: '',
 
     // Card 5: Subjek & Klasifikasi Perpustakaan
-    edition: 'Cetakan ke-2 (Revisi Lengkap)',
+    edition: '',
     subjects: [
       {
         id: 1,
         category: 'Nama Orang',
-        name: '-',
+        name: '',
         type: 'Tdk Ada Info Tambahan', // 'Tdk Ada Info Tambahan' | 'Nama Depan' | 'Nama Belakang' | 'Nama Keluarga'
       },
     ],
-    ddcNumber: '-',
-    callNumber: '-',
+    ddcNumber: '',
+    callNumber: '',
     isbn: '',
 
     // Card 7: Lokasi Koleksi Daring / E-Resource
@@ -154,6 +154,8 @@ export default function AdminEntriKatalog() {
           const res = await fetchAdminCatalogById(id)
           const data = res?.data
           if (data) {
+            const actualCatalogId = data.id || id
+            setEditingCatalogId(actualCatalogId)
             setFormData((prev) => ({
               ...prev,
               title: data.title || '',
@@ -167,14 +169,16 @@ export default function AdminEntriKatalog() {
               pages: data.pages || '',
               dimension: data.dimension || '',
               isbn: data.isbn || '',
-              ddcNumber: data.ddc_number || '-',
-              callNumber: data.catalog_call_number || '-',
+              ddcNumber: data.ddc_number || '',
+              callNumber: data.catalog_call_number || '',
               notes: data.abstract || '',
               materialType: data.material_type || prev.materialType,
               isQuarantine: Boolean(data.is_quarantine),
               status: data.total_copies > 0 ? 'Aktif di Rak' : 'Draft Siap Eksemplar',
+              totalCopies: data.total_copies || (data.collections ? data.collections.length : 0),
+              availableCopies: data.available_copies ?? (data.collections ? data.collections.filter(c => c.availability_status === 'AVAILABLE' && !c.is_quarantine).length : 0),
             }))
-            showToast(`Katalog #${id} ("${data.title}") berhasil dimuat dari database!`)
+            showToast(`Katalog #${actualCatalogId} ("${data.title}") berhasil dimuat dari database!`)
           }
         } catch (err) {
           console.error('Failed to load existing catalog:', err)
@@ -869,7 +873,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.publishCity}
                     onChange={(e) => handleInputChange('publishCity', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: Singaraja"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -881,7 +886,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.publisher}
                     onChange={(e) => handleInputChange('publisher', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: Erlangga"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -893,7 +899,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.publishYear}
                     onChange={(e) => handleInputChange('publishYear', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: 2026"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
               </div>
@@ -914,7 +921,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.pages}
                     onChange={(e) => handleInputChange('pages', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: xxiv, 312 hlm."
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -926,7 +934,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.illustrations}
                     onChange={(e) => handleInputChange('illustrations', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: ilus. , tabel, foto"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -938,7 +947,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.dimension}
                     onChange={(e) => handleInputChange('dimension', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: 24 cm"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -952,7 +962,8 @@ export default function AdminEntriKatalog() {
                     onChange={(e) =>
                       handleInputChange('accompanyingMaterial', e.target.value)
                     }
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: 1 CD-ROM atau -"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
               </div>
@@ -973,7 +984,8 @@ export default function AdminEntriKatalog() {
                   type="text"
                   value={formData.edition}
                   onChange={(e) => handleInputChange('edition', e.target.value)}
-                  className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Contoh: Cetakan ke-2 (Revisi Lengkap)"
+                  className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                 />
               </div>
 
@@ -1025,7 +1037,8 @@ export default function AdminEntriKatalog() {
                         onChange={(e) =>
                           updateSubject(sub.id, 'name', e.target.value)
                         }
-                        className="flex-1 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        placeholder="Masukan tajuk subjek atau topik"
+                        className="flex-1 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                       <button
                         type="button"
@@ -1078,7 +1091,8 @@ export default function AdminEntriKatalog() {
                     type="text"
                     value={formData.ddcNumber}
                     onChange={(e) => handleInputChange('ddcNumber', e.target.value)}
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="Contoh: 297.01"
+                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                   />
                 </div>
 
@@ -1092,7 +1106,8 @@ export default function AdminEntriKatalog() {
                       type="text"
                       value={formData.callNumber}
                       onChange={(e) => handleInputChange('callNumber', e.target.value)}
-                      className="flex-1 min-w-0 bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      placeholder="Contoh: 297.01 ZAI e"
+                      className="flex-1 min-w-0 bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                     />
                     <button
                       type="button"
@@ -1115,7 +1130,8 @@ export default function AdminEntriKatalog() {
                       type="text"
                       value={formData.isbn}
                       onChange={(e) => handleInputChange('isbn', e.target.value)}
-                      className="flex-1 min-w-0 bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                      placeholder="Contoh: 978-602-401-829-1"
+                      className="flex-1 min-w-0 bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono transition"
                     />
                     <div
                       className="w-8.5 h-8.5 bg-[#DCE9FE] text-[#1E40AF] rounded-lg shrink-0 flex items-center justify-center"
@@ -1406,6 +1422,14 @@ export default function AdminEntriKatalog() {
 
               {/* Metadata Summary Info */}
               <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs">
+                {editingCatalogId && (
+                  <div className="flex items-center justify-between pb-1 mb-1 border-b border-slate-100">
+                    <span className="text-slate-500">Total Eksemplar:</span>
+                    <span className="font-bold text-[#1E40AF]">
+                      {formData.totalCopies || 0} Fisik ({formData.availableCopies || 0} Tersedia)
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Penginput:</span>
                   <span className="font-bold text-slate-800">{formData.authorAdmin}</span>
