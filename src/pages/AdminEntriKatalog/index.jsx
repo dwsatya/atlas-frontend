@@ -489,7 +489,7 @@ export default function AdminEntriKatalog() {
 
             {/* Tampilkan Form MARC 21 */}
             <button
-              onClick={() => setIsMarcModalOpen(true)}
+              onClick={() => setIsMarcModalOpen(false)}
               className="px-3.5 py-1.5 bg-white border border-[#2563EB] text-[#2563EB] hover:bg-blue-50 text-xs font-semibold rounded-lg flex items-center gap-2 transition cursor-pointer shadow-2xs"
             >
               <FileCode className="w-4 h-4" />
