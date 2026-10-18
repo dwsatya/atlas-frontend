@@ -99,12 +99,7 @@ export default function AdminEntriKatalog() {
     ],
     ddcNumber: '-',
     callNumber: '-',
-    isbn: '978-623-789-812-4',
-
-    // Card 6: Catatan & Abstrak (Notes)
-    noteType: 'Abstrak / Anotasi',
-    notes:
-      'Buku ini menyajikan telaah mendalam mengenai kerangka epistemologis studi Islam kontemporer yang relevan bagi santri dan akademisi madrasah. Dilengkapi dengan pedoman riset digital, studi naskah keagamaan, serta integrasi sains modern dengan khazanah turats pesantren.',
+    isbn: '',
 
     // Card 7: Lokasi Koleksi Daring / E-Resource
     eResourceUrl: 'https://example.com',
@@ -455,11 +450,10 @@ export default function AdminEntriKatalog() {
       {toast && (
         <div className="fixed top-18 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           <div
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${
-              toast.type === 'error'
-                ? 'bg-red-600 text-white'
-                : 'bg-emerald-600 text-white'
-            }`}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${toast.type === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-emerald-600 text-white'
+              }`}
           >
             {toast.type === 'error' ? (
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1371,7 +1365,7 @@ export default function AdminEntriKatalog() {
                 <input
                   type="checkbox"
                   checked={formData.showInOpac}
-                  onChange={() => {}}
+                  onChange={() => { }}
                   className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
                 />
                 <div className="space-y-0.5">
@@ -1397,7 +1391,7 @@ export default function AdminEntriKatalog() {
                 <input
                   type="checkbox"
                   checked={formData.isQuarantine}
-                  onChange={() => {}}
+                  onChange={() => { }}
                   className="mt-0.5 w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer"
                 />
                 <div className="space-y-0.5">
