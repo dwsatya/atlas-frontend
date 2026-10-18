@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
 import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import LoginAdmin from './pages/LoginAdmin'
+import Panduan from './pages/Panduan'
 
 export default function App() {
   return (
@@ -39,6 +40,10 @@ export default function App() {
       {/* OPAC / Katalog Route */}
       <Route path="/opac" element={<Opac />} />
       <Route path="/katalog" element={<Opac />} />
+
+      {/* Panduan Layanan Route */}
+      <Route path="/panduan" element={<Panduan />} />
+      <Route path="/bantuan" element={<Panduan />} />
 
       {/* Detail Buku Route */}
       <Route path="/books/:id" element={<DetailBuku />} />

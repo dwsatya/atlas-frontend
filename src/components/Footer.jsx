@@ -4,7 +4,7 @@
  */
 export default function Footer() {
   return (
-    <footer className="bg-[#001D48] text-white pt-12 pb-6 border-t border-[#001738] mt-16 w-full">
+    <footer className="bg-[#001D48] text-white pt-12 pb-28 md:pb-6 border-t border-[#001738] mt-16 w-full">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-slate-800 text-xs leading-relaxed">
         {/* Column 1: Info Dinas */}
         <div className="space-y-3">
