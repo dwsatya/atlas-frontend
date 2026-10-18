@@ -4,9 +4,7 @@ import {
   Library,
   Plus,
   Barcode,
-  Tag,
   FileSpreadsheet,
-  Zap,
   HelpCircle,
   Search,
   Filter,
@@ -288,11 +286,10 @@ export default function AdminDaftarKoleksi() {
       {toast && (
         <div className="fixed top-18 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           <div
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${
-              toast.type === 'error'
-                ? 'bg-red-600 text-white'
-                : 'bg-emerald-600 text-white'
-            }`}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold ${toast.type === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-emerald-600 text-white'
+              }`}
           >
             {toast.type === 'error' ? (
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -324,107 +321,56 @@ export default function AdminDaftarKoleksi() {
           </div>
 
           {/* Action Buttons Right Side */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-wrap">
-            {/* Top Row on Small Devices */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* + Tambah Eksemplar Baru */}
-              <button
-                type="button"
-                onClick={() => navigate('/admin/entri-katalog')}
-                className="px-3.5 py-2 bg-[#0B2256] hover:bg-[#07183c] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Tambah Eksemplar Baru</span>
-              </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* + Tambah Eksemplar Baru */}
+            <button
+              type="button"
+              onClick={() => navigate('/admin/entri-katalog')}
+              className="px-3.5 py-2 bg-[#0B2256] hover:bg-[#07183c] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Eksemplar Baru</span>
+            </button>
 
-              {/* Cetak Barcode & Label */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (items.length > 0) {
-                    setSelectedItemForPrint(items[0])
-                  } else {
-                    showToast('Belum ada data eksemplar untuk dicetak', 'error')
-                  }
-                }}
-                className="px-3.5 py-2 bg-[#EEF2F6] hover:bg-slate-200 border border-slate-300 text-[#0B2256] text-xs font-semibold rounded-lg flex items-center gap-2 transition cursor-pointer shadow-2xs"
-              >
-                <Barcode className="w-4 h-4 text-[#2563EB]" />
-                <span>Cetak Barcode &amp; Label</span>
-              </button>
-            </div>
-
-            {/* Bottom Row on Small Devices */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Label DDC */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (items.length > 0) {
-                    showToast('Menyiapkan pratinjau Label Punggung DDC...')
-                    setSelectedItemForPrint(items[0])
-                  } else {
-                    showToast('Belum ada data eksemplar untuk dicetak', 'error')
-                  }
-                }}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-              >
-                <Tag className="w-3.5 h-3.5 text-blue-600" />
-                <span>Label DDC</span>
-              </button>
-
-              {/* Export Excel */}
-              <button
-                type="button"
-                onClick={() => {
-                  const headers = 'Barcode,RFID,Judul,Pengarang,DDC,Penerbit,Deskripsi Fisik,Edisi,Pengadaan,Status\n'
-                  const rows = items
-                    .map(
-                      (i) =>
-                        `"${i.barcode_no}","${i.rfid_no}","${i.title}","${i.author}","${i.ddc_class} ${i.ddc_author_code}","${i.publisher} (${i.publish_city || ''} ${i.publish_year || ''})","${i.pages} ${i.dimension || ''}","${i.edition}","${i.source_type}","${i.status}"`
-                    )
-                    .join('\n')
-                  const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `rekap_koleksi_eksemplar_${Date.now()}.csv`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                  showToast('Data koleksi berhasil diekspor ke format Excel/CSV!')
-                }}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Export Excel</span>
-              </button>
-
-              {/* Stock Opname Kilat */}
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Mode Stock Opname Kilat Scanner aktif. Arahkan barcode reader.')
-                }}
-                className="px-3 py-1.5 bg-[#D1FAE5] hover:bg-emerald-200 border border-[#A7F3D0] text-[#065F46] text-xs font-bold rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-              >
-                <Zap className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
-                <span>Stock Opname Kilat</span>
-              </button>
-
-              {/* Help Circle */}
-              <button
-                type="button"
-                onClick={() =>
-                  alert(
-                    'Bantuan Daftar Koleksi & Eksemplar:\n- Gunakan filter untuk menyortir buku berdasarkan rak atau status sirkulasi.\n- Gunakan shortcut Ctrl + K untuk langsung mencari.\n- Klik checkbox untuk menjalankan aksi massal seperti cetak barcode.'
+            {/* Export Excel */}
+            <button
+              type="button"
+              onClick={() => {
+                const headers = 'Barcode,RFID,Judul,Pengarang,DDC,Penerbit,Deskripsi Fisik,Edisi,Pengadaan,Status\n'
+                const rows = items
+                  .map(
+                    (i) =>
+                      `"${i.barcode_no}","${i.rfid_no}","${i.title}","${i.author}","${i.ddc_class} ${i.ddc_author_code}","${i.publisher} (${i.publish_city || ''} ${i.publish_year || ''})","${i.pages} ${i.dimension || ''}","${i.edition}","${i.source_type}","${i.status}"`
                   )
-                }
-                className="w-8 h-8 rounded-full border border-slate-300 text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer text-xs font-bold"
-                title="Bantuan Panduan"
-              >
-                <HelpCircle className="w-4 h-4 text-slate-500" />
-              </button>
-            </div>
+                  .join('\n')
+                const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `rekap_koleksi_eksemplar_${Date.now()}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+                showToast('Data koleksi berhasil diekspor ke format Excel/CSV!')
+              }}
+              className="px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Export Excel</span>
+            </button>
+
+            {/* Help Circle */}
+            <button
+              type="button"
+              onClick={() =>
+                alert(
+                  'Bantuan Daftar Koleksi & Eksemplar:\n- Gunakan filter untuk menyortir buku berdasarkan rak atau status sirkulasi.\n- Gunakan shortcut Ctrl + K untuk langsung mencari.\n- Klik checkbox untuk menjalankan aksi massal seperti cetak barcode.'
+                )
+              }
+              className="w-8 h-8 rounded-full border border-slate-300 text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer text-xs font-bold"
+              title="Bantuan Panduan"
+            >
+              <HelpCircle className="w-4 h-4 text-slate-500" />
+            </button>
           </div>
         </div>
 
@@ -650,9 +596,6 @@ export default function AdminDaftarKoleksi() {
                 placeholder="Ketik Nomor Induk / Barcode Eksemplar, Judul Buku, Pengarang, atau ISBN..."
                 className="w-full bg-[#F8FAFC] border border-slate-300 rounded-xl pl-10 pr-16 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 border border-slate-300 rounded px-1.5 py-0.5 bg-white">
-                Ctrl + K
-              </span>
             </div>
 
             {/* Action Buttons */}
@@ -782,9 +725,8 @@ export default function AdminDaftarKoleksi() {
                     return (
                       <tr
                         key={item.id}
-                        className={`hover:bg-blue-50/20 transition-colors ${
-                          isSelected ? 'bg-blue-50/40' : ''
-                        }`}
+                        className={`hover:bg-blue-50/20 transition-colors ${isSelected ? 'bg-blue-50/40' : ''
+                          }`}
                       >
                         {/* Checkbox Column */}
                         <td className="py-3 px-3 text-center">
@@ -1035,11 +977,10 @@ export default function AdminDaftarKoleksi() {
                   key={pageNum}
                   type="button"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                    currentPage === pageNum
-                      ? 'bg-[#0B2256] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
+                  className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${currentPage === pageNum
+                    ? 'bg-[#0B2256] text-white shadow-2xs'
+                    : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -1052,11 +993,10 @@ export default function AdminDaftarKoleksi() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage(pagination.last_page)}
-                  className={`px-2 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                    currentPage === pagination.last_page
-                      ? 'bg-[#0B2256] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
+                  className={`px-2 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${currentPage === pagination.last_page
+                    ? 'bg-[#0B2256] text-white shadow-2xs'
+                    : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
                 >
                   {pagination.last_page}
                 </button>
