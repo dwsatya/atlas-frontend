@@ -61,130 +61,22 @@ export default function AdminDaftarKoleksi() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  // Pre-configured rich dataset matching the user's UI screenshot pixel-for-pixel
-  const sampleItems = useMemo(
-    () => [
-      {
-        id: 1,
-        barcode_no: 'B001-092821',
-        rfid_no: 'RFID: E200-9812-441A',
-        title: 'Epistemologi Studi Islam Kontemporer',
-        author: 'Dr. H. M. Zainuddin, M.A.',
-        isbn_meta: 'ISBN: 978-602-401-829-1 • Monograf Cetak',
-        ddc_class: '297.01',
-        ddc_author_code: 'ZAI e',
-        edition: 'Cet. 2',
-        year: 'Tahun 2026',
-        source_type: 'APBD 2026',
-        status: 'Tersedia di Rak',
-        status_subtext: '',
-        status_type: 'available',
-        material_type: 'Monograf (Buku)',
-        room_location: 'Lantai 1 - Rak Monograf A',
-      },
-      {
-        id: 2,
-        barcode_no: 'B001-092822',
-        rfid_no: 'RFID: E200-9812-441B',
-        title: 'Babad Buleleng: Sejarah Panji Sakti & Pura Ki Barak',
-        author: 'I Gusti Bagus Sudhyatmaka',
-        isbn_meta: 'ISBN: 978-602-140-502-3 • Monograf Referensi Bali',
-        ddc_class: '959.86',
-        ddc_author_code: 'SUD b',
-        edition: 'Cet. 1',
-        year: 'Tahun 2024',
-        source_type: 'Hibah Perpusnas',
-        status: 'Sedang Dipinjam',
-        status_subtext: 'Tempo: 20 Sep 2026',
-        status_type: 'borrowed',
-        material_type: 'Koleksi Naskah/Lontar',
-        room_location: 'Lantai 2 - Koleksi Khusus / Bali',
-      },
-      {
-        id: 3,
-        barcode_no: 'B002-044102',
-        rfid_no: 'RFID: E200-7731-002C',
-        title: 'Tata Kelola Kearsipan Modern DAPD Buleleng',
-        author: 'Tim Arsiparis Lembaga Kearsipan Daerah',
-        isbn_meta: 'ISBN: 978-623-711-209-4 • Terbitan Khusus Pemkab',
-        ddc_class: '025.17',
-        ddc_author_code: 'TIM t',
-        edition: 'Edisi Rev.',
-        year: 'Tahun 2025',
-        source_type: 'DAK 2025',
-        status: 'Proses Binding',
-        status_subtext: 'Rusak Jilidan Punggung',
-        status_type: 'maintenance',
-        material_type: 'Monograf (Buku)',
-        room_location: 'Ruang Karantina & Preservasi',
-      },
-      {
-        id: 4,
-        barcode_no: 'B003-108290',
-        rfid_no: 'RFID: E200-5510-388X',
-        title: 'Metodologi Riset Komputasi Berbasis Big Data',
-        author: 'Prof. Dr. I Nyoman Suartha, M.Kom',
-        isbn_meta: 'ISBN: 978-602-298-771-0 • Buku Teks Perguruan Tinggi',
-        ddc_class: '005.7',
-        ddc_author_code: 'SUA m',
-        edition: 'Cet. 3',
-        year: 'Tahun 2026',
-        source_type: 'APBD 2026',
-        status: 'Tersedia di Rak',
-        status_subtext: '',
-        status_type: 'available',
-        material_type: 'Monograf (Buku)',
-        room_location: 'Lantai 1 - Rak Monograf A',
-      },
-      {
-        id: 5,
-        barcode_no: 'B003-108291',
-        rfid_no: 'RFID: E200-5510-388Y',
-        title: 'Fiqih Sunnah Sayyid Sabiq Jilid 1',
-        author: 'Sayyid Sabiq (Penerjemah: H. Moh. Abdai Rathomy)',
-        isbn_meta: 'ISBN: 978-979-592-123-9 • Ensiklopedia Hukum Islam',
-        ddc_class: '297.14',
-        ddc_author_code: 'SAB f',
-        edition: 'Cet. 14',
-        year: 'Tahun 2023',
-        source_type: 'Hibah Masyarakat',
-        status: 'Karantina',
-        status_subtext: 'Baru Dikembalikan',
-        status_type: 'quarantine',
-        material_type: 'Monograf (Buku)',
-        room_location: 'Ruang Karantina & Preservasi',
-      },
-      {
-        id: 6,
-        barcode_no: 'B004-200914',
-        rfid_no: 'RFID: E200-6192-104P',
-        title: 'Kumpulan Cerita Rakyat Kab Buleleng: Jayaprana & Layonsari',
-        author: 'Putu Arya Tirta Yadnya',
-        isbn_meta: 'ISBN: 978-602-841-399-2 • Koleksi Muatan Lokal Anak',
-        ddc_class: '398.2',
-        ddc_author_code: 'TIR k',
-        edition: 'Cet. 4',
-        year: 'Tahun 2025',
-        source_type: 'APBD 2025',
-        status: 'Tersedia di Rak',
-        status_subtext: '',
-        status_type: 'available',
-        material_type: 'Monograf (Buku)',
-        room_location: 'Lantai 1 - Ruang Baca Utama',
-      },
-    ],
-    []
-  )
-
-  const [items, setItems] = useState(sampleItems)
+  const [items, setItems] = useState([])
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    from: 0,
+    to: 0,
+  })
   const [metrics, setMetrics] = useState({
-    total_exemplars: 42650,
-    total_titles: 14820,
-    available_count: 38410,
-    borrowed_count: 4240,
-    month_new_count: 156,
-    maintenance_count: 182,
-    quarantine_count: 24,
+    total_exemplars: 0,
+    total_titles: 0,
+    available_count: 0,
+    borrowed_count: 0,
+    month_new_count: 0,
+    maintenance_count: 0,
+    quarantine_count: 0,
   })
 
   // Load collections from backend API
@@ -201,97 +93,111 @@ export default function AdminDaftarKoleksi() {
       })
 
       if (res?.data) {
-        const rawList = res.data.data || res.data || []
-        if (Array.isArray(rawList) && rawList.length > 0) {
-          const mapped = rawList.map((c) => {
-            const cat = c.catalog || {}
-            let statusText = 'Tersedia di Rak'
-            let statusType = 'available'
-            let statusSubtext = ''
+        const rawList = res.data.data || (Array.isArray(res.data) ? res.data : [])
+        const mapped = rawList.map((c) => {
+          const cat = c.catalog || {}
+          let statusText = 'Tersedia di Rak'
+          let statusType = 'available'
+          let statusSubtext = ''
 
-            if (c.is_quarantine || c.availability_status === 'QUARANTINED') {
-              statusText = 'Karantina'
-              statusType = 'quarantine'
-              statusSubtext = 'Baru Dikembalikan'
-            } else if (c.availability_status === 'BORROWED') {
-              statusText = 'Sedang Dipinjam'
-              statusType = 'borrowed'
-              statusSubtext = 'Tempo: 20 Sep 2026'
-            } else if (c.availability_status === 'MAINTENANCE') {
-              statusText = 'Proses Binding'
-              statusType = 'maintenance'
-              statusSubtext = 'Rusak Jilidan Punggung'
-            }
+          if (c.is_quarantine || c.availability_status === 'QUARANTINED') {
+            statusText = 'Karantina'
+            statusType = 'quarantine'
+            statusSubtext = 'Baru Dikembalikan'
+          } else if (c.availability_status === 'BORROWED') {
+            statusText = 'Sedang Dipinjam'
+            statusType = 'borrowed'
+            statusSubtext = 'Tempo: 20 Sep 2026'
+          } else if (c.availability_status === 'MAINTENANCE') {
+            statusText = 'Proses Binding'
+            statusType = 'maintenance'
+            statusSubtext = 'Rusak Jilidan Punggung'
+          }
 
-            const ddcParts = (c.exemplar_call_number || cat.catalog_call_number || cat.ddc_number || '-').split(' ')
-            const ddcClass = ddcParts[0] || '-'
-            const ddcAuthorCode = ddcParts.slice(1).join(' ') || (cat.author_main ? cat.author_main.slice(0, 3).toUpperCase() : '-')
+          const ddcParts = (c.exemplar_call_number || cat.catalog_call_number || cat.ddc_number || '-').split(' ')
+          const ddcClass = ddcParts[0] || '-'
+          const ddcAuthorCode = ddcParts.slice(1).join(' ') || (cat.author_main ? cat.author_main.slice(0, 3).toUpperCase() : '-')
 
-            return {
-              id: c.id,
-              barcode_no: c.barcode_no || `BC-${c.id}`,
-              rfid_no: c.rfid_no ? `RFID: ${c.rfid_no}` : `RFID: E200-${c.id.toString().padStart(4, '0')}-001`,
-              title: cat.title || 'Monograf Koleksi Perpustakaan',
-              author: cat.author_main || 'Penulis Perpustakaan',
-              isbn_meta: `ISBN: ${cat.isbn || '-'} • ${cat.material_type || 'Monograf Cetak'}`,
-              ddc_class: ddcClass,
-              ddc_author_code: ddcAuthorCode,
-              edition: cat.edition || 'Cet. 1',
-              year: cat.publish_year ? `Tahun ${cat.publish_year}` : 'Tahun 2026',
-              source_type: c.source_type ? `${c.source_type} ${cat.publish_year || '2026'}` : 'APBD 2026',
-              status: statusText,
-              status_subtext: statusSubtext,
-              status_type: statusType,
-              material_type: cat.material_type || 'Monograf (Buku)',
-              room_location: c.room_location_code || 'Lantai 1 - Rak Monograf A',
-            }
+          return {
+            id: c.id,
+            collection_id: c.id,
+            catalog_id: c.catalog_id || cat.id || c.id,
+            barcode_no: c.barcode_no || `BC-${c.id}`,
+            rfid_no: c.rfid_no ? `RFID: ${c.rfid_no}` : (c.barcode_no ? `RFID: ${c.barcode_no}` : '-'),
+            title: cat.title || 'Monograf Koleksi Perpustakaan',
+            author: cat.author_main || 'Penulis Tidak Diketahui',
+            publisher: cat.publisher || '-',
+            publish_city: cat.publish_city || '',
+            publish_year: cat.publish_year || '',
+            pages: cat.pages || '-',
+            dimension: cat.dimension || '',
+            isbn_meta: `ISBN: ${cat.isbn || '-'} • ${cat.material_type || 'Monograf Cetak'}`,
+            ddc_class: ddcClass,
+            ddc_author_code: ddcAuthorCode,
+            edition: cat.edition || 'Cet. 1',
+            year: cat.publish_year ? `Tahun ${cat.publish_year}` : '-',
+            source_type: c.source_type || 'Pengadaan Perpustakaan',
+            status: statusText,
+            status_subtext: statusSubtext,
+            status_type: statusType,
+            material_type: cat.material_type || 'Monograf (Buku)',
+            room_location: c.room_location_code || 'Lantai 1 - Rak Monograf A',
+          }
+        })
+        setItems(mapped)
+
+        if (res.data?.meta) {
+          setPagination({
+            current_page: res.data.meta.current_page || 1,
+            last_page: res.data.meta.last_page || 1,
+            total: res.data.meta.total || mapped.length,
+            from: res.data.meta.from || (mapped.length > 0 ? 1 : 0),
+            to: res.data.meta.to || mapped.length,
           })
-          setItems(mapped)
         } else {
-          // If database has fewer items, preserve screenshot demo data
-          setItems(sampleItems)
+          setPagination({
+            current_page: 1,
+            last_page: 1,
+            total: mapped.length,
+            from: mapped.length > 0 ? 1 : 0,
+            to: mapped.length,
+          })
         }
+      } else {
+        setItems([])
+      }
 
-        if (res.metrics) {
-          setMetrics((prev) => ({
-            ...prev,
-            total_exemplars: res.metrics.total_exemplars || prev.total_exemplars,
-            total_titles: res.metrics.total_titles || prev.total_titles,
-            available_count: res.metrics.available_count || prev.available_count,
-            borrowed_count: res.metrics.borrowed_count || prev.borrowed_count,
-            month_new_count: res.metrics.month_new_count || prev.month_new_count,
-            maintenance_count: res.metrics.maintenance_count || prev.maintenance_count,
-            quarantine_count: res.metrics.quarantine_count || prev.quarantine_count,
-          }))
-        }
+      if (res?.metrics) {
+        setMetrics({
+          total_exemplars: res.metrics.total_exemplars ?? 0,
+          total_titles: res.metrics.total_titles ?? 0,
+          available_count: res.metrics.available_count ?? 0,
+          borrowed_count: res.metrics.borrowed_count ?? 0,
+          month_new_count: res.metrics.month_new_count ?? 0,
+          maintenance_count: res.metrics.maintenance_count ?? 0,
+          quarantine_count: res.metrics.quarantine_count ?? 0,
+        })
       }
     } catch (err) {
-      console.warn('Using local dataset for Daftar Koleksi:', err)
-      setItems(sampleItems)
+      console.error('Gagal memuat data koleksi dari server:', err)
+      setItems([])
     } finally {
       setLoading(false)
     }
-  }, [searchTerm, selectedStatus, selectedMaterialType, selectedLocation, currentPage, perPage, sampleItems])
+  }, [searchTerm, selectedStatus, selectedMaterialType, selectedLocation, currentPage, perPage])
 
   useEffect(() => {
     loadCollections()
   }, [loadCollections])
 
-  // Display metrics with graceful fallback to UI screenshot values
-  const displayTotalExemplars =
-    metrics.total_exemplars > 50 ? metrics.total_exemplars.toLocaleString('id-ID') : '42.650'
-  const displayTotalTitles =
-    metrics.total_titles > 50 ? metrics.total_titles.toLocaleString('id-ID') : '14.820'
-  const displayAvailable =
-    metrics.available_count > 50 ? metrics.available_count.toLocaleString('id-ID') : '38.410'
-  const displayBorrowed =
-    metrics.borrowed_count > 50 ? metrics.borrowed_count.toLocaleString('id-ID') : '4.240'
-  const displayMonthNew =
-    metrics.month_new_count > 50 ? `+${metrics.month_new_count}` : '+156'
-  const displayMaintenance =
-    metrics.maintenance_count > 50 ? metrics.maintenance_count : '182'
-  const displayQuarantine =
-    metrics.quarantine_count > 50 ? metrics.quarantine_count : '24'
+  // Display metrics using actual data from database
+  const displayTotalExemplars = (metrics.total_exemplars ?? 0).toLocaleString('id-ID')
+  const displayTotalTitles = (metrics.total_titles ?? 0).toLocaleString('id-ID')
+  const displayAvailable = (metrics.available_count ?? 0).toLocaleString('id-ID')
+  const displayBorrowed = (metrics.borrowed_count ?? 0).toLocaleString('id-ID')
+  const displayMonthNew = `+${metrics.month_new_count ?? 0}`
+  const displayMaintenance = (metrics.maintenance_count ?? 0).toLocaleString('id-ID')
+  const displayQuarantine = (metrics.quarantine_count ?? 0).toLocaleString('id-ID')
 
   // Filter items in memory if local search
   const filteredItems = useMemo(() => {
@@ -435,7 +341,11 @@ export default function AdminDaftarKoleksi() {
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedItemForPrint(items[0])
+                  if (items.length > 0) {
+                    setSelectedItemForPrint(items[0])
+                  } else {
+                    showToast('Belum ada data eksemplar untuk dicetak', 'error')
+                  }
                 }}
                 className="px-3.5 py-2 bg-[#EEF2F6] hover:bg-slate-200 border border-slate-300 text-[#0B2256] text-xs font-semibold rounded-lg flex items-center gap-2 transition cursor-pointer shadow-2xs"
               >
@@ -450,8 +360,12 @@ export default function AdminDaftarKoleksi() {
               <button
                 type="button"
                 onClick={() => {
-                  showToast('Menyiapkan pratinjau Label Punggung DDC...')
-                  setSelectedItemForPrint(items[0])
+                  if (items.length > 0) {
+                    showToast('Menyiapkan pratinjau Label Punggung DDC...')
+                    setSelectedItemForPrint(items[0])
+                  } else {
+                    showToast('Belum ada data eksemplar untuk dicetak', 'error')
+                  }
                 }}
                 className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
               >
@@ -463,11 +377,11 @@ export default function AdminDaftarKoleksi() {
               <button
                 type="button"
                 onClick={() => {
-                  const headers = 'Barcode,RFID,Judul,Pengarang,DDC,Edisi,Pengadaan,Status\n'
+                  const headers = 'Barcode,RFID,Judul,Pengarang,DDC,Penerbit,Deskripsi Fisik,Edisi,Pengadaan,Status\n'
                   const rows = items
                     .map(
                       (i) =>
-                        `"${i.barcode_no}","${i.rfid_no}","${i.title}","${i.author}","${i.ddc_class} ${i.ddc_author_code}","${i.edition}","${i.source_type}","${i.status}"`
+                        `"${i.barcode_no}","${i.rfid_no}","${i.title}","${i.author}","${i.ddc_class} ${i.ddc_author_code}","${i.publisher} (${i.publish_city || ''} ${i.publish_year || ''})","${i.pages} ${i.dimension || ''}","${i.edition}","${i.source_type}","${i.status}"`
                     )
                     .join('\n')
                   const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
@@ -836,8 +750,10 @@ export default function AdminDaftarKoleksi() {
                 <tr className="bg-[#F8FAFC] border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   <th className="py-3 px-3 w-8 text-center">#</th>
                   <th className="py-3 px-2.5 min-w-[125px]">No. Induk / Barcode</th>
-                  <th className="py-3 px-2.5 min-w-[240px]">Judul Monograf &amp; Pengarang</th>
+                  <th className="py-3 px-2.5 min-w-[220px]">Judul Monograf &amp; Pengarang</th>
                   <th className="py-3 px-2 min-w-[95px] text-center">No. Panggil (Call No)</th>
+                  <th className="py-3 px-2.5 min-w-[140px]">Penerbit / Publikasi</th>
+                  <th className="py-3 px-2.5 min-w-[120px]">Deskripsi Fisik</th>
                   <th className="py-3 px-2 min-w-[80px]">Edisi / Tahun</th>
                   <th className="py-3 px-2 min-w-[105px]">Pengadaan</th>
                   <th className="py-3 px-2 min-w-[115px]">Status</th>
@@ -847,7 +763,7 @@ export default function AdminDaftarKoleksi() {
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-16 text-center text-slate-500">
+                    <td colSpan={10} className="py-16 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                         <span>Memuat data koleksi dan eksemplar...</span>
@@ -856,7 +772,7 @@ export default function AdminDaftarKoleksi() {
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-16 text-center text-slate-400">
+                    <td colSpan={10} className="py-16 text-center text-slate-400">
                       Tidak ada eksemplar yang sesuai dengan kriteria pencarian.
                     </td>
                   </tr>
@@ -919,6 +835,31 @@ export default function AdminDaftarKoleksi() {
                               {item.ddc_author_code}
                             </span>
                           </div>
+                        </td>
+
+                        {/* Penerbit / Publikasi */}
+                        <td className="py-3 px-2.5 align-top">
+                          <p className="font-semibold text-slate-800 text-xs line-clamp-1" title={item.publisher}>
+                            {item.publisher || '-'}
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {item.publish_city ? item.publish_city : ''}
+                            {item.publish_city && item.publish_year ? ' • ' : ''}
+                            {item.publish_year ? `Thn ${item.publish_year}` : ''}
+                            {!item.publish_city && !item.publish_year && '-'}
+                          </p>
+                        </td>
+
+                        {/* Deskripsi Fisik */}
+                        <td className="py-3 px-2.5 align-top">
+                          <p className="font-medium text-slate-800 text-xs line-clamp-1" title={item.pages}>
+                            {item.pages || '-'}
+                          </p>
+                          {item.dimension && item.dimension !== '-' && (
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              {item.dimension}
+                            </p>
+                          )}
                         </td>
 
                         {/* Edisi / Tahun */}
@@ -1014,7 +955,7 @@ export default function AdminDaftarKoleksi() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => navigate(`/admin/entri-katalog?id=${item.id}`)}
+                              onClick={() => navigate(`/admin/entri-katalog?id=${item.catalog_id || item.id}`)}
                               className="p-1 rounded hover:bg-slate-100 hover:text-blue-600 transition cursor-pointer"
                               title="Edit Katalog / Eksemplar"
                             >
@@ -1073,6 +1014,10 @@ export default function AdminDaftarKoleksi() {
 
           {/* Right Pagination Buttons */}
           <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-slate-500 mr-2 text-[11px] hidden sm:inline">
+              Menampilkan {pagination.total > 0 ? pagination.from : 0} - {pagination.to} dari {pagination.total} eksemplar
+            </span>
+
             <button
               type="button"
               disabled={currentPage <= 1}
@@ -1083,60 +1028,46 @@ export default function AdminDaftarKoleksi() {
               <span>Sebelumnya</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                currentPage === 1
-                  ? 'bg-[#0B2256] text-white shadow-2xs'
-                  : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              1
-            </button>
+            {Array.from({ length: Math.min(pagination.last_page, 5) }, (_, i) => {
+              const pageNum = i + 1
+              return (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
+                    currentPage === pageNum
+                      ? 'bg-[#0B2256] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            })}
+
+            {pagination.last_page > 5 && (
+              <>
+                <span className="px-1 text-slate-400 font-bold">..</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(pagination.last_page)}
+                  className={`px-2 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
+                    currentPage === pagination.last_page
+                      ? 'bg-[#0B2256] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {pagination.last_page}
+                </button>
+              </>
+            )}
 
             <button
               type="button"
-              onClick={() => setCurrentPage(2)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                currentPage === 2
-                  ? 'bg-[#0B2256] text-white shadow-2xs'
-                  : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              2
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentPage(3)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                currentPage === 3
-                  ? 'bg-[#0B2256] text-white shadow-2xs'
-                  : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              3
-            </button>
-
-            <span className="px-1 text-slate-400 font-bold">..</span>
-
-            <button
-              type="button"
-              onClick={() => setCurrentPage(4265)}
-              className={`px-2 h-8 rounded-lg font-bold flex items-center justify-center transition cursor-pointer ${
-                currentPage === 4265
-                  ? 'bg-[#0B2256] text-white shadow-2xs'
-                  : 'border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              4265
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer font-medium"
+              disabled={currentPage >= pagination.last_page}
+              onClick={() => setCurrentPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1 cursor-pointer font-medium"
             >
               <span>Selanjutnya</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -1203,6 +1134,35 @@ export default function AdminDaftarKoleksi() {
                   <p className="font-bold text-emerald-700 text-xs mt-0.5">
                     {selectedItemForDetail.status}
                   </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">
+                    Penerbit / Publikasi
+                  </span>
+                  <p className="font-semibold text-slate-800 text-xs mt-0.5">
+                    {selectedItemForDetail.publisher || '-'}
+                  </p>
+                  {(selectedItemForDetail.publish_city || selectedItemForDetail.publish_year) && (
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {[selectedItemForDetail.publish_city, selectedItemForDetail.publish_year].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">
+                    Deskripsi Fisik
+                  </span>
+                  <p className="font-semibold text-slate-800 text-xs mt-0.5">
+                    {selectedItemForDetail.pages || '-'}
+                  </p>
+                  {selectedItemForDetail.dimension && selectedItemForDetail.dimension !== '-' && (
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {selectedItemForDetail.dimension}
+                    </p>
+                  )}
                 </div>
               </div>
 
