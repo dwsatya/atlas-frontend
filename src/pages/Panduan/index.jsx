@@ -124,7 +124,6 @@ export default function Panduan() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-semibold border border-white/10">
-            <Sparkles className="w-3.5 h-3.5 text-blue-300" />
             <span>Pusat Bantuan &amp; Panduan Perpustakaan</span>
           </div>
 
@@ -166,11 +165,10 @@ export default function Panduan() {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full transition-all cursor-pointer whitespace-nowrap shadow-xs ${
-                activeCategory === cat.id
+              className={`px-4 py-2 rounded-full transition-all cursor-pointer whitespace-nowrap shadow-xs ${activeCategory === cat.id
                   ? 'bg-[#00255c] text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-              }`}
+                }`}
             >
               {cat.label}
             </button>
@@ -238,9 +236,8 @@ export default function Panduan() {
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                      openFaqIndex === idx ? 'rotate-180 text-blue-600' : ''
-                    }`}
+                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openFaqIndex === idx ? 'rotate-180 text-blue-600' : ''
+                      }`}
                   />
                 </button>
                 {openFaqIndex === idx && (
