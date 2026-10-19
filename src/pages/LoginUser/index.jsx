@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { loginMember, getGoogleLoginUrl } from '../../services/api'
+import { notifyLoginSuccess } from '../../utils/notification'
 import background1 from '../../assets/background1.jpeg'
 
 export default function LoginUser() {
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
     const { login } = useAuth()
+    const hasHandledOAuth = useRef(false)
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -24,10 +26,12 @@ export default function LoginUser() {
 
         if (errorParam) {
             setErrorMessage(decodeURIComponent(errorParam))
-        } else if (tokenParam && userParam) {
+        } else if (tokenParam && userParam && !hasHandledOAuth.current) {
+            hasHandledOAuth.current = true
             try {
                 const parsedUser = JSON.parse(decodeURIComponent(userParam))
                 login(parsedUser, tokenParam)
+                notifyLoginSuccess(parsedUser.name || parsedUser.nama_lengkap || parsedUser.email, false)
 
                 if (parsedUser.has_completed_data) {
                     navigate('/', { replace: true })
@@ -61,6 +65,7 @@ export default function LoginUser() {
                 const memberData = response?.data?.member || { name: email.split('@')[0], email }
                 const token = response?.token || response?.data?.token
                 login(memberData, token)
+                notifyLoginSuccess(memberData.name || memberData.nama_lengkap || email.split('@')[0], false)
                 navigate('/')
             }
         } catch (err) {

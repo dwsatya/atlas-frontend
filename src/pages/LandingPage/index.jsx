@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import background2 from '../../assets/background2.jpeg'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
 import { fetchBooks } from '../../services/api'
+import { notifyLoginSuccess } from '../../utils/notification'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 
@@ -12,16 +13,19 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, isAuthenticated, login } = useAuth()
+  const hasHandledOAuth = useRef(false)
 
   // Tangani callback login Google jika diarahkan ke landing page
   useEffect(() => {
     const tokenParam = searchParams.get('token')
     const userParam = searchParams.get('user')
 
-    if (tokenParam && userParam) {
+    if (tokenParam && userParam && !hasHandledOAuth.current) {
+      hasHandledOAuth.current = true
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userParam))
         login(parsedUser, tokenParam)
+        notifyLoginSuccess(parsedUser.name || parsedUser.nama_lengkap || parsedUser.email, false)
         // Bersihkan token & data user dari URL di browser address bar
         window.history.replaceState({}, document.title, window.location.pathname)
       } catch (err) {
