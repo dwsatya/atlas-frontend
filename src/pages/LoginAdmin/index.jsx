@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { loginAdmin, getGoogleLoginUrl } from '../../services/api'
+import { notifyLoginSuccess } from '../../utils/notification'
 import background1 from '../../assets/background1.jpeg'
 
 export default function LoginAdmin() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { login } = useAuth()
+  const hasHandledOAuth = useRef(false)
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -25,10 +27,12 @@ export default function LoginAdmin() {
 
     if (errorParam) {
       setErrorMessage(decodeURIComponent(errorParam))
-    } else if (tokenParam && userParam) {
+    } else if (tokenParam && userParam && !hasHandledOAuth.current) {
+      hasHandledOAuth.current = true
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userParam))
         login(parsedUser, tokenParam)
+        notifyLoginSuccess(parsedUser.name || 'Admin', true)
         // Admin langsung menuju dashboard admin
         navigate('/dashboard', { replace: true })
       } catch (err) {
@@ -53,6 +57,7 @@ export default function LoginAdmin() {
         }
         const token = response?.token || response?.data?.token
         login(adminData, token)
+        notifyLoginSuccess(adminData.name || username, true)
         // Langsung ke dashboard admin tanpa form pengisian data diri
         navigate('/dashboard', { replace: true })
       }

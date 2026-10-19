@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logoatlas from '../assets/logoatlas.png'
 import { resolvePhotoUrl } from '../utils/ktaImageGenerator'
+import { notifyLogoutSuccess } from '../utils/notification'
 import MobileBottomNav from './MobileBottomNav'
 
 /**
@@ -22,8 +23,10 @@ export default function Navbar() {
   const userPhoto = resolvePhotoUrl(rawPhoto)
 
   const handleLogout = () => {
+    const isAdmin = Boolean(user?.role === 'Administrator' || user?.role === 'Admin' || user?.username)
     logout()
-    navigate('/')
+    notifyLogoutSuccess(isAdmin)
+    navigate(isAdmin ? '/admin/login' : '/')
   }
 
   const isHomeActive = location.pathname === '/' || location.pathname === '/landing'

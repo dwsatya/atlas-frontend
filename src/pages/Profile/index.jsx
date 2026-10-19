@@ -6,6 +6,7 @@ import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
 import KtaCard, { KtaFront, KtaBack } from '../../components/KtaCard'
 import { resolvePhotoUrl, downloadKtaImage } from '../../utils/ktaImageGenerator'
+import { notifyLogoutSuccess } from '../../utils/notification'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 
@@ -32,6 +33,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   // State untuk Mode Edit Profil Langsung
   const [isEditing, setIsEditing] = useState(false)
@@ -194,9 +196,27 @@ export default function Profile() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Tutup modal logout saat menekan Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showLogoutModal) {
+        setShowLogoutModal(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showLogoutModal])
+
   const handleLogout = () => {
+    setShowLogoutModal(true)
+  }
+
+  const confirmLogout = () => {
+    const isAdmin = Boolean(user?.role === 'Administrator' || user?.role === 'Admin' || user?.username)
+    setShowLogoutModal(false)
     logout()
-    navigate('/')
+    notifyLogoutSuccess(isAdmin)
+    navigate(isAdmin ? '/admin/login' : '/')
   }
 
   const memberNo = profileData?.member_no || 'MEM-202610-0001'
@@ -864,6 +884,80 @@ export default function Profile() {
                   />
                 </svg>
                 <span>{downloadingSide === 'keduanya' ? 'Menyiapkan Gambar...' : 'Unduh Kedua Sisi Sekaligus (PNG)'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Popup Overlay Konfirmasi Logout User & Admin */}
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 sm:p-7 text-center transform transition-all animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Tombol Tutup Silang di Kanan Atas */}
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Tutup"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Icon Warning Logout */}
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shadow-xs">
+              <svg className="w-6 h-6 stroke-[2.2] translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </div>
+
+            {/* Judul Konfirmasi */}
+            <h3 className="text-lg font-bold text-slate-900 mb-1.5 tracking-tight">
+              Yakin ingin Logout?
+            </h3>
+
+            {/* Keterangan */}
+            <p className="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+              {Boolean(user?.role === 'Administrator' || user?.role === 'Admin' || user?.username)
+                ? 'Sesi kerja administrasi Anda akan diakhiri. Anda perlu login kembali untuk mengakses panel administrasi ATLAS.'
+                : 'Sesi akun Anda akan diakhiri. Anda perlu login kembali untuk mengakses profil dan fitur peminjaman perpustakaan ATLAS.'}
+            </p>
+
+            {/* Tombol Pilihan Aksi */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg className="w-4 h-4 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                <span>Ya, Logout</span>
               </button>
             </div>
           </div>
