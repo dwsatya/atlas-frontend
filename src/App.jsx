@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PrivateRoute from './components/PrivateRoute'
+import AdminRoute from './components/AdminRoute'
 import LandingPage from './pages/LandingPage'
 import Opac from './pages/Opac'
 import DetailBuku from './pages/DetailBuku'
@@ -26,16 +27,72 @@ export default function App() {
       <Route path="/login-admin" element={<LoginAdmin />} />
 
       {/* Admin Entri Katalog Routes */}
-      <Route path="/admin/entri-katalog" element={<AdminEntriKatalog />} />
-      <Route path="/admin/katalog" element={<AdminEntriKatalog />} />
-      <Route path="/entri-katalog" element={<AdminEntriKatalog />} />
+      <Route
+        path="/admin/entri-katalog"
+        element={
+          <AdminRoute>
+            <AdminEntriKatalog />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/katalog"
+        element={
+          <AdminRoute>
+            <AdminEntriKatalog />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/entri-katalog"
+        element={
+          <AdminRoute>
+            <AdminEntriKatalog />
+          </AdminRoute>
+        }
+      />
 
       {/* Admin Daftar Koleksi & Eksemplar Routes */}
-      <Route path="/admin/koleksi" element={<AdminDaftarKoleksi />} />
-      <Route path="/admin/daftar-koleksi" element={<AdminDaftarKoleksi />} />
-      <Route path="/admin/koleksi-eksemplar" element={<AdminDaftarKoleksi />} />
-      <Route path="/admin/daftar-katalog" element={<AdminDaftarKoleksi />} />
-      <Route path="/daftar-koleksi" element={<AdminDaftarKoleksi />} />
+      <Route
+        path="/admin/koleksi"
+        element={
+          <AdminRoute>
+            <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/daftar-koleksi"
+        element={
+          <AdminRoute>
+            <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/koleksi-eksemplar"
+        element={
+          <AdminRoute>
+            <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/daftar-katalog"
+        element={
+          <AdminRoute>
+            <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/daftar-koleksi"
+        element={
+          <AdminRoute>
+            <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
 
       {/* OPAC / Katalog Route */}
       <Route path="/opac" element={<Opac />} />
@@ -63,29 +120,29 @@ export default function App() {
       <Route path="/form-data-diri" element={<FormDataDiri />} />
       <Route path="/data-diri" element={<FormDataDiri />} />
 
-      {/* Protected Routes using PrivateRoute */}
+      {/* Admin Dashboard Routes */}
       <Route
         path="/dashboard"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Dashboard />
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/admin/dashboard"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Dashboard />
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/admin"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <Dashboard />
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
       <Route

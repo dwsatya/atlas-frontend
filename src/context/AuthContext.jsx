@@ -43,13 +43,27 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user
 
+  const isAdmin = Boolean(
+    user && (
+      user.role === 'admin' ||
+      user.role === 'super_admin' ||
+      user.role === 'operator' ||
+      user.role === 'Administrator' ||
+      Boolean(user.username && !user.member_no)
+    )
+  )
+
+  const isMember = Boolean(user && !isAdmin)
+
   const contextValue = useMemo(() => ({
     user,
     token,
     isAuthenticated,
+    isAdmin,
+    isMember,
     login,
     logout,
-  }), [user, token, isAuthenticated, login, logout])
+  }), [user, token, isAuthenticated, isAdmin, isMember, login, logout])
 
   return (
     <AuthContext.Provider value={contextValue}>
