@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Library,
+  Archive,
   ShieldAlert,
   Users,
   AlertTriangle,
@@ -52,7 +53,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
         {
           name: 'Karantina Koleksi',
           path: '/admin/karantina',
-          icon: ShieldAlert,
+          icon: Archive,
         },
       ],
     },
@@ -137,6 +138,14 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/admin/daftar-koleksi' ||
         currentPath === '/admin/koleksi-eksemplar' ||
         currentPath === '/admin/daftar-katalog'
+      )
+    }
+    if (itemPath === '/admin/karantina') {
+      return (
+        currentPath === '/admin/karantina' ||
+        currentPath === '/admin/karantina-koleksi' ||
+        currentPath === '/admin/karantina-katalog' ||
+        currentPath === '/karantina-koleksi'
       )
     }
     if (itemPath === '/dashboard') {

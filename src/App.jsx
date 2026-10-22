@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
 import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
+import AdminKarantinaKoleksi from './pages/AdminKarantinaKoleksi'
 import LoginAdmin from './pages/LoginAdmin'
 import Panduan from './pages/Panduan'
 
@@ -90,6 +91,40 @@ export default function App() {
         element={
           <AdminRoute>
             <AdminDaftarKoleksi />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Karantina Koleksi / Katalog Routes */}
+      <Route
+        path="/admin/karantina"
+        element={
+          <AdminRoute>
+            <AdminKarantinaKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/karantina-koleksi"
+        element={
+          <AdminRoute>
+            <AdminKarantinaKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/karantina-katalog"
+        element={
+          <AdminRoute>
+            <AdminKarantinaKoleksi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/karantina-koleksi"
+        element={
+          <AdminRoute>
+            <AdminKarantinaKoleksi />
           </AdminRoute>
         }
       />

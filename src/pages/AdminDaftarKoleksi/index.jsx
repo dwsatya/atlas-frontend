@@ -26,9 +26,11 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Archive,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { fetchAdminCollections } from '../../services/api'
+import { fetchAdminCollections, updateAdminCatalog } from '../../services/api'
+import KarantinaActionModal from './KarantinaActionModal'
 
 export default function AdminDaftarKoleksi() {
   const navigate = useNavigate()
@@ -51,6 +53,8 @@ export default function AdminDaftarKoleksi() {
   // Modal states
   const [selectedItemForDetail, setSelectedItemForDetail] = useState(null)
   const [selectedItemForPrint, setSelectedItemForPrint] = useState(null)
+  const [isQuarantineModalOpen, setIsQuarantineModalOpen] = useState(false)
+  const [itemsToQuarantine, setItemsToQuarantine] = useState([])
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -235,6 +239,70 @@ export default function AdminDaftarKoleksi() {
     )
   }
 
+  // Quarantine Modal Handlers
+  const handleOpenQuarantineModal = (itemOrList) => {
+    const list = Array.isArray(itemOrList) ? itemOrList : [itemOrList]
+    setItemsToQuarantine(list)
+    setIsQuarantineModalOpen(true)
+  }
+
+  const handleConfirmQuarantine = async ({
+    items: targetItems,
+    reason,
+    category,
+    priority,
+    notes,
+  }) => {
+    try {
+      const targetIds = targetItems.map((t) => t.id)
+
+      // Update local items state immediately
+      setItems((prev) =>
+        prev.map((item) =>
+          targetIds.includes(item.id)
+            ? {
+                ...item,
+                status: 'Karantina',
+                status_type: 'quarantine',
+                status_subtext: reason,
+              }
+            : item
+        )
+      )
+
+      // Update database for catalogs
+      for (const it of targetItems) {
+        const catId = it.catalog_id || it.id
+        if (catId) {
+          await updateAdminCatalog(catId, {
+            is_quarantine: true,
+            quarantine_reason: notes ? `${reason} — ${notes}` : reason,
+            abstract: notes || it.notes || '',
+          }).catch((e) => console.warn('Quarantine catalog update error:', e))
+        }
+      }
+
+      // Update metrics
+      setMetrics((prev) => ({
+        ...prev,
+        quarantine_count: (prev.quarantine_count || 0) + targetItems.length,
+        available_count: Math.max(0, (prev.available_count || 0) - targetItems.length),
+      }))
+
+      setIsQuarantineModalOpen(false)
+      setItemsToQuarantine([])
+      setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)))
+      setBulkAction('')
+
+      showToast(
+        `${targetItems.length} koleksi berhasil dipindahkan ke Keranjang Karantina! Alasan: ${reason}`
+      )
+    } catch (err) {
+      console.error('Failed to quarantine items:', err)
+      showToast('Gagal memproses karantina koleksi.', 'error')
+    }
+  }
+
   // Bulk action executor
   const handleExecuteBulkAction = () => {
     if (!bulkAction) {
@@ -259,6 +327,10 @@ export default function AdminDaftarKoleksi() {
       )
       showToast(`${selectedIds.length} eksemplar berhasil diperbarui menjadi Tersedia di Rak!`)
       setSelectedIds([])
+    } else if (bulkAction === 'set_quarantine') {
+      const selectedObjects = items.filter((i) => selectedIds.includes(i.id))
+      handleOpenQuarantineModal(selectedObjects)
+      return
     } else if (bulkAction === 'delete') {
       if (confirm(`Yakin ingin menghapus ${selectedIds.length} eksemplar terpilih?`)) {
         setItems((prev) => prev.filter((item) => !selectedIds.includes(item.id)))
@@ -648,6 +720,7 @@ export default function AdminDaftarKoleksi() {
                   <option value="">-- Pilih Tindakan --</option>
                   <option value="print_barcode">Cetak Barcode Terpilih</option>
                   <option value="set_available">Ubah Status ke Tersedia</option>
+                  <option value="set_quarantine">Masukkan ke Keranjang Karantina</option>
                   <option value="delete">Hapus Eksemplar</option>
                 </select>
                 <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -902,6 +975,14 @@ export default function AdminDaftarKoleksi() {
                               title="Edit Katalog / Eksemplar"
                             >
                               <SlidersHorizontal className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenQuarantineModal(item)}
+                              className="p-1 rounded hover:bg-amber-50 hover:text-amber-600 transition cursor-pointer"
+                              title="Masukkan ke Keranjang Karantina"
+                            >
+                              <Archive className="w-4 h-4 text-amber-600" />
                             </button>
                             <button
                               type="button"
@@ -1247,6 +1328,17 @@ export default function AdminDaftarKoleksi() {
           </div>
         </div>
       )}
+
+      {/* Modal Karantina Koleksi */}
+      <KarantinaActionModal
+        isOpen={isQuarantineModalOpen}
+        onClose={() => {
+          setIsQuarantineModalOpen(false)
+          setItemsToQuarantine([])
+        }}
+        itemsToQuarantine={itemsToQuarantine}
+        onConfirmQuarantine={handleConfirmQuarantine}
+      />
     </AdminLayout>
   )
 }
