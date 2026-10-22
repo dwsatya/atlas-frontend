@@ -41,6 +41,10 @@ export default function AdminEntriKatalog() {
   // Toast feedback state
   const [toast, setToast] = useState(null)
 
+  // Validation error & touched states
+  const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
@@ -200,9 +204,180 @@ export default function AdminEntriKatalog() {
     return () => clearInterval(timer)
   }, [])
 
-  // Input change handler
+  // Validation rules helper
+  const validateField = (field, value, currentData = formData) => {
+    const val = typeof value === 'string' ? value.trim() : ''
+
+    switch (field) {
+      case 'title': {
+        // 1. Judul Utama minimal 3 huruf (Wajib Huruf, dilarang angka)
+        if (!val) {
+          return 'Judul Utama wajib diisi.'
+        }
+        if (/\d/.test(val)) {
+          return 'Judul Utama wajib berupa huruf dan dilarang mengandung angka.'
+        }
+        const letterCount = (val.match(/[a-zA-Z]/g) || []).length
+        if (letterCount < 3) {
+          return 'Judul Utama minimal harus terdiri dari 3 huruf.'
+        }
+        return null
+      }
+
+      case 'subtitle': {
+        // Anak Judul (Sub Judul): opsional jika kosong, jika diisi minimal 3 huruf
+        if (!val) return null
+        const letterCount = (val.match(/[a-zA-Z]/g) || []).length
+        if (letterCount < 3) {
+          return 'Anak Judul minimal harus terdiri dari 3 huruf.'
+        }
+        return null
+      }
+
+      case 'statementOfResponsibility': {
+        // Penanggung Jawab: opsional jika kosong, jika diisi minimal 3 huruf
+        if (!val) return null
+        const letterCount = (val.match(/[a-zA-Z]/g) || []).length
+        if (letterCount < 3) {
+          return 'Penanggung Jawab minimal harus terdiri dari 3 huruf.'
+        }
+        return null
+      }
+
+      case 'mainAuthor': {
+        // 2. Nama Pengarang Utama menjadi wajib diisi, dan minimal 3 huruf (Wajib Huruf, dilarang angka)
+        if (!val) {
+          return 'Nama Pengarang Utama wajib diisi.'
+        }
+        if (/\d/.test(val)) {
+          return 'Nama Pengarang Utama wajib berupa huruf dan dilarang mengandung angka.'
+        }
+        const letterCount = (val.match(/[a-zA-Z]/g) || []).length
+        if (letterCount < 3) {
+          return 'Nama Pengarang Utama minimal harus terdiri dari 3 huruf.'
+        }
+        return null
+      }
+
+      case 'publishCity': {
+        // 3a. Tempat terbit: Wajib Huruf, dilarang angka (opsional jika kosong)
+        if (!val) return null
+        if (/\d/.test(val)) {
+          return 'Tempat terbit wajib berupa huruf dan dilarang mengandung angka.'
+        }
+        if (!(val.match(/[a-zA-Z]/g) || []).length) {
+          return 'Tempat terbit harus mengandung huruf alfabet.'
+        }
+        return null
+      }
+
+      case 'publisher': {
+        // 3b. Nama Penerbit: Wajib Huruf, dilarang angka (opsional jika kosong)
+        if (!val) return null
+        if (/\d/.test(val)) {
+          return 'Nama Penerbit wajib berupa huruf dan dilarang mengandung angka.'
+        }
+        if (!(val.match(/[a-zA-Z]/g) || []).length) {
+          return 'Nama Penerbit harus mengandung huruf alfabet.'
+        }
+        return null
+      }
+
+      case 'publishYear': {
+        // 3c. Tahun terbit: Wajib angka (opsional jika kosong)
+        if (!val) return null
+        if (!/^\d+$/.test(val)) {
+          return 'Tahun terbit wajib berupa angka (contoh: 2026).'
+        }
+        return null
+      }
+
+      case 'ddcNumber': {
+        // 4a. No. Klas DDC: Wajib Angka (opsional jika kosong)
+        if (!val || val === '-') return null
+        if (/[a-zA-Z]/.test(val)) {
+          return 'No. Klas DDC wajib berupa angka (contoh: 297.01).'
+        }
+        if (!/^[\d.]+$/.test(val)) {
+          return 'No. Klas DDC hanya boleh berisi angka dan titik (contoh: 297.01).'
+        }
+        return null
+      }
+
+      case 'isbn': {
+        // 4b. ISBN / ISSN: Wajib Angka (opsional jika kosong)
+        if (!val) return null
+        if (/[a-zA-Z]/.test(val)) {
+          return 'ISBN / ISSN wajib berupa angka dan dilarang mengandung huruf.'
+        }
+        if (!/^[\d\-\s]+$/.test(val) || !/\d/.test(val)) {
+          return 'ISBN / ISSN wajib berupa angka (contoh: 978-602-401-829-1).'
+        }
+        return null
+      }
+
+      case 'eResourceUrl': {
+        // 5. Lokasi Koleksi Daring / E-Resource wajib berbentuk link minimal seperti "example.com"
+        if (!val) return null
+        const linkRegex = /^(https?:\/\/)?([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$/i
+        if (!linkRegex.test(val)) {
+          return 'Lokasi Koleksi Daring wajib berupa tautan link yang valid (minimal seperti "example.com").'
+        }
+        return null
+      }
+
+      default:
+        return null
+    }
+  }
+
+  // Validate all fields across the catalog form
+  const validateForm = (data = formData) => {
+    const fieldsToValidate = [
+      'title',
+      'subtitle',
+      'statementOfResponsibility',
+      'mainAuthor',
+      'publishCity',
+      'publisher',
+      'publishYear',
+      'ddcNumber',
+      'isbn',
+      'eResourceUrl',
+    ]
+    const newErrors = {}
+    fieldsToValidate.forEach((f) => {
+      const err = validateField(f, data[f], data)
+      if (err) {
+        newErrors[f] = err
+      }
+    })
+    return newErrors
+  }
+
+  // Input change handler with live validation
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value }
+      if (errors[field] || touched[field]) {
+        const error = validateField(field, value, updated)
+        setErrors((prevErr) => ({
+          ...prevErr,
+          [field]: error || undefined,
+        }))
+      }
+      return updated
+    })
+  }
+
+  // Input blur handler
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+    const error = validateField(field, formData[field], formData)
+    setErrors((prevErr) => ({
+      ...prevErr,
+      [field]: error || undefined,
+    }))
   }
 
   // Cover image handlers
@@ -313,8 +488,23 @@ export default function AdminEntriKatalog() {
 
   // Save Catalog Handler (Connects directly to Backend API & Database)
   const handleSaveCatalog = async (silent = false) => {
-    if (!formData.title.trim()) {
-      showToast('Judul Utama wajib diisi sebelum menyimpan!', 'error')
+    const formErrors = validateForm(formData)
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors)
+      setTouched((prev) => ({
+        ...prev,
+        ...Object.keys(formErrors).reduce((acc, k) => ({ ...acc, [k]: true }), {}),
+      }))
+
+      const firstField = Object.keys(formErrors)[0]
+      const firstError = formErrors[firstField]
+      showToast(firstError, 'error')
+
+      const element = document.getElementById(`field-${firstField}`)
+      if (element) {
+        element.focus()
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
       return false
     }
 
@@ -422,6 +612,7 @@ export default function AdminEntriKatalog() {
         ...prev,
         ...importedData,
       }))
+      setErrors({})
     }
     showToast('Impor selesai! Data bibliografis berhasil dimuat ke database.', 'success')
   }
@@ -445,6 +636,7 @@ export default function AdminEntriKatalog() {
       callNumber: catalog.callNumber || '-',
       notes: catalog.notes || '',
     }))
+    setErrors({})
     showToast(`Metadata katalog "${catalog.title}" berhasil disalin dari database!`)
   }
 
@@ -620,16 +812,22 @@ export default function AdminEntriKatalog() {
               {/* Row 1: Judul Utama + Diawali Kata Sandang */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <div className="sm:col-span-8 space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-title" className="text-xs font-semibold text-slate-700">
                     Judul Utama <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="field-title"
                       type="text"
                       value={formData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
+                      onBlur={() => handleBlur('title')}
                       placeholder="Masukan judul utama"
-                      className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition pr-9"
+                      className={`w-full rounded-lg px-3.5 py-2 text-xs transition pr-9 ${
+                        errors.title
+                          ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                          : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      }`}
                     />
                     <button
                       type="button"
@@ -640,6 +838,12 @@ export default function AdminEntriKatalog() {
                       <Layers className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  {errors.title && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.title}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-4 space-y-1">
@@ -667,32 +871,56 @@ export default function AdminEntriKatalog() {
 
               {/* Row 2: Anak Judul (Sub Judul) */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">
+                <label htmlFor="field-subtitle" className="text-xs font-semibold text-slate-700">
                   Anak Judul (Sub Judul)
                 </label>
                 <input
+                  id="field-subtitle"
                   type="text"
                   value={formData.subtitle}
                   onChange={(e) => handleInputChange('subtitle', e.target.value)}
+                  onBlur={() => handleBlur('subtitle')}
                   placeholder="Masukan anak judul"
-                  className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                  className={`w-full rounded-lg px-3.5 py-2 text-xs transition ${
+                    errors.subtitle
+                      ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                      : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                  }`}
                 />
+                {errors.subtitle && (
+                  <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errors.subtitle}</span>
+                  </p>
+                )}
               </div>
 
               {/* Row 3: Penanggung Jawab */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">
+                <label htmlFor="field-statementOfResponsibility" className="text-xs font-semibold text-slate-700">
                   Penanggung Jawab (Pernyataan Tanggung Jawab / Statement of Responsibility)
                 </label>
                 <input
+                  id="field-statementOfResponsibility"
                   type="text"
                   value={formData.statementOfResponsibility}
                   onChange={(e) =>
                     handleInputChange('statementOfResponsibility', e.target.value)
                   }
+                  onBlur={() => handleBlur('statementOfResponsibility')}
                   placeholder="Masukan penanggung jawab"
-                  className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                  className={`w-full rounded-lg px-3.5 py-2 text-xs transition ${
+                    errors.statementOfResponsibility
+                      ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                      : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                  }`}
                 />
+                {errors.statementOfResponsibility && (
+                  <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errors.statementOfResponsibility}</span>
+                  </p>
+                )}
                 <p className="text-[11px] text-slate-400">
                   Sesuai yang tertera pada halaman judul monograf.
                 </p>
@@ -708,7 +936,7 @@ export default function AdminEntriKatalog() {
               {/* Sub-Card 1: Tajuk Pengarang Utama */}
               <div className="bg-[#F0F4FA] rounded-xl p-3.5 space-y-2.5 border border-slate-200/60">
                 <span className="text-xs font-bold text-[#0B2256] block">
-                  Tajuk Pengarang Utama
+                  Tajuk Pengarang Utama <span className="text-red-500">*</span>
                 </span>
 
                 {/* Input row */}
@@ -730,11 +958,17 @@ export default function AdminEntriKatalog() {
 
                   <div className="sm:col-span-8 flex items-center gap-2">
                     <input
+                      id="field-mainAuthor"
                       type="text"
                       value={formData.mainAuthor}
                       onChange={(e) => handleInputChange('mainAuthor', e.target.value)}
+                      onBlur={() => handleBlur('mainAuthor')}
                       placeholder="Masukan nama pengarang utama"
-                      className="flex-1 bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className={`flex-1 rounded-lg px-3 py-1.5 text-xs transition ${
+                        errors.mainAuthor
+                          ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                          : 'bg-white border border-slate-200/80 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      }`}
                     />
                     <button
                       type="button"
@@ -746,6 +980,12 @@ export default function AdminEntriKatalog() {
                     </button>
                   </div>
                 </div>
+                {errors.mainAuthor && (
+                  <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errors.mainAuthor}</span>
+                  </p>
+                )}
 
                 {/* Radio buttons row */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-[11px] text-slate-700">
@@ -866,42 +1106,78 @@ export default function AdminEntriKatalog() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-publishCity" className="text-xs font-semibold text-slate-700">
                     Tempat Terbit
                   </label>
                   <input
+                    id="field-publishCity"
                     type="text"
                     value={formData.publishCity}
                     onChange={(e) => handleInputChange('publishCity', e.target.value)}
+                    onBlur={() => handleBlur('publishCity')}
                     placeholder="Contoh: Singaraja"
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                    className={`w-full rounded-lg px-3.5 py-2 text-xs transition ${
+                      errors.publishCity
+                        ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                        : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                    }`}
                   />
+                  {errors.publishCity && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.publishCity}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-publisher" className="text-xs font-semibold text-slate-700">
                     Nama Penerbit
                   </label>
                   <input
+                    id="field-publisher"
                     type="text"
                     value={formData.publisher}
                     onChange={(e) => handleInputChange('publisher', e.target.value)}
+                    onBlur={() => handleBlur('publisher')}
                     placeholder="Contoh: Erlangga"
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                    className={`w-full rounded-lg px-3.5 py-2 text-xs transition ${
+                      errors.publisher
+                        ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                        : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                    }`}
                   />
+                  {errors.publisher && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.publisher}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-publishYear" className="text-xs font-semibold text-slate-700">
                     Tahun Terbit
                   </label>
                   <input
+                    id="field-publishYear"
                     type="text"
                     value={formData.publishYear}
                     onChange={(e) => handleInputChange('publishYear', e.target.value)}
+                    onBlur={() => handleBlur('publishYear')}
                     placeholder="Contoh: 2026"
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                    className={`w-full rounded-lg px-3.5 py-2 text-xs transition ${
+                      errors.publishYear
+                        ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                        : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                    }`}
                   />
+                  {errors.publishYear && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.publishYear}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1084,25 +1360,38 @@ export default function AdminEntriKatalog() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 {/* No. Klas DDC */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-ddcNumber" className="text-xs font-semibold text-slate-700">
                     No. Klas DDC <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="field-ddcNumber"
                     type="text"
                     value={formData.ddcNumber}
                     onChange={(e) => handleInputChange('ddcNumber', e.target.value)}
+                    onBlur={() => handleBlur('ddcNumber')}
                     placeholder="Contoh: 297.01"
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                    className={`w-full rounded-lg px-3 py-2 text-xs transition ${
+                      errors.ddcNumber
+                        ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                        : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                    }`}
                   />
+                  {errors.ddcNumber && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.ddcNumber}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* No. Panggil (Call No) */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-callNumber" className="text-xs font-semibold text-slate-700">
                     No. Panggil (Call No) <span className="text-red-500">*</span>
                   </label>
                   <div className="flex items-center gap-1.5 w-full">
                     <input
+                      id="field-callNumber"
                       type="text"
                       value={formData.callNumber}
                       onChange={(e) => handleInputChange('callNumber', e.target.value)}
@@ -1122,24 +1411,44 @@ export default function AdminEntriKatalog() {
 
                 {/* ISBN / ISSN */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label htmlFor="field-isbn" className="text-xs font-semibold text-slate-700">
                     ISBN / ISSN
                   </label>
                   <div className="flex items-center gap-1.5 w-full">
                     <input
+                      id="field-isbn"
                       type="text"
                       value={formData.isbn}
                       onChange={(e) => handleInputChange('isbn', e.target.value)}
+                      onBlur={() => handleBlur('isbn')}
                       placeholder="Contoh: 978-602-401-829-1"
-                      className="flex-1 min-w-0 bg-[#F0F4FA] border border-slate-200/60 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono transition"
+                      className={`flex-1 min-w-0 rounded-lg px-3 py-2 text-xs font-mono transition ${
+                        errors.isbn
+                          ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                          : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      }`}
                     />
                     <div
-                      className="w-8.5 h-8.5 bg-[#DCE9FE] text-[#1E40AF] rounded-lg shrink-0 flex items-center justify-center"
-                      title="Format Terverifikasi"
+                      className={`w-8.5 h-8.5 rounded-lg shrink-0 flex items-center justify-center transition ${
+                        errors.isbn
+                          ? 'bg-red-100 text-red-600'
+                          : 'bg-[#DCE9FE] text-[#1E40AF]'
+                      }`}
+                      title={errors.isbn ? 'Format Tidak Valid' : 'Format Terverifikasi'}
                     >
-                      <Check className="w-4 h-4" />
+                      {errors.isbn ? (
+                        <AlertCircle className="w-4 h-4" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
                     </div>
                   </div>
+                  {errors.isbn && (
+                    <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{errors.isbn}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1205,27 +1514,51 @@ export default function AdminEntriKatalog() {
 
               <div className="flex flex-col sm:flex-row items-center gap-2.5">
                 <div className="relative flex-1 w-full">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${errors.eResourceUrl ? 'text-red-500' : 'text-slate-400'}`}>
                     <Globe className="w-4 h-4" />
                   </div>
                   <input
-                    type="url"
+                    id="field-eResourceUrl"
+                    type="text"
                     value={formData.eResourceUrl}
                     onChange={(e) => handleInputChange('eResourceUrl', e.target.value)}
-                    placeholder="https://perpustakaan.bulelengkab.go.id/repo/..."
-                    className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg pl-10 pr-4 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                    onBlur={() => handleBlur('eResourceUrl')}
+                    placeholder="Contoh: example.com atau https://perpustakaan.bulelengkab.go.id"
+                    className={`w-full rounded-lg pl-10 pr-4 py-2 text-xs font-mono transition ${
+                      errors.eResourceUrl
+                        ? 'bg-red-50/50 border border-red-500 text-red-900 placeholder-red-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500'
+                        : 'bg-[#F0F4FA] border border-slate-200/60 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                    }`}
                   />
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => showToast('Tautan e-resource berhasil ditambahkan')}
+                  onClick={() => {
+                    const err = validateField('eResourceUrl', formData.eResourceUrl)
+                    if (err) {
+                      setErrors((prev) => ({ ...prev, eResourceUrl: err }))
+                      showToast(err, 'error')
+                      return
+                    }
+                    if (!formData.eResourceUrl?.trim()) {
+                      showToast('Masukkan URL terlebih dahulu', 'error')
+                      return
+                    }
+                    showToast('Tautan e-resource valid dan berhasil ditambahkan')
+                  }}
                   className="w-full sm:w-auto px-4 py-2 bg-[#007A64] hover:bg-[#006452] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tambah URL</span>
                 </button>
               </div>
+              {errors.eResourceUrl && (
+                <p className="text-[11px] text-red-600 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errors.eResourceUrl}</span>
+                </p>
+              )}
             </div>
           </div>
 
