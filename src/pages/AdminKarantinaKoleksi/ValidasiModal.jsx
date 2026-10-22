@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, CheckCircle, Sparkles, BookOpen, AlertCircle, HelpCircle } from 'lucide-react'
+import { X, CheckCircle, Pencil, BookOpen, AlertCircle, HelpCircle } from 'lucide-react'
 
 export default function ValidasiModal({ item, isOpen, onClose, onSave }) {
   const [ddc, setDdc] = useState('')
@@ -57,7 +57,7 @@ export default function ValidasiModal({ item, isOpen, onClose, onSave }) {
         <div className="bg-[#0B2256] text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-amber-300">
-              <Sparkles className="w-4.5 h-4.5" />
+              <Pencil className="w-4.5 h-4.5" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white leading-snug">

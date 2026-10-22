@@ -3,7 +3,6 @@ import {
   Archive,
   Copy,
   FileSpreadsheet,
-  FileMinus,
   Trash2,
   Plus,
   RotateCw,
@@ -23,8 +22,8 @@ import {
   Sparkles,
   AlertCircle,
   Eye,
+  Pencil,
   MoreVertical,
-  Inbox,
   CheckCircle,
   ShieldAlert,
   ArrowRight,
@@ -38,11 +37,13 @@ import ValidasiModal from './ValidasiModal'
 import MergeModal from './MergeModal'
 import HelpModal from './HelpModal'
 import PublishOpacModal from './PublishOpacModal'
-import { INITIAL_QUARANTINE_BOOKS, INITIAL_QUARANTINE_METRICS } from './initialData'
+import DeleteConfirmModal from './DeleteConfirmModal'
+import { INITIAL_QUARANTINE_BOOKS } from './initialData'
 import {
   fetchAdminQuarantine,
   restoreQuarantineCatalog,
   validateAndSaveCatalog,
+  deleteAdminCatalog,
 } from '../../services/api'
 
 export default function AdminKarantinaKoleksi() {
@@ -56,13 +57,11 @@ export default function AdminKarantinaKoleksi() {
     {
       id: 1,
       field: 'Judul Buku',
-      operator: 'Mengandung kata',
       value: 'Metodologi Riset',
     },
     {
       id: 2,
       field: 'Alasan Karantina',
-      operator: 'Mengandung kata',
       value: 'Belum Dilengkapi No Klasifikasi DDC',
     },
   ])
@@ -89,6 +88,9 @@ export default function AdminKarantinaKoleksi() {
   const [selectedItemForMerge, setSelectedItemForMerge] = useState(null)
   const [selectedItemForPublish, setSelectedItemForPublish] = useState(null)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [selectedItemForDelete, setSelectedItemForDelete] = useState(null)
+  const [bulkItemsToDelete, setBulkItemsToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Loading & toast feedback
   const [loading, setLoading] = useState(false)
@@ -205,7 +207,6 @@ export default function AdminKarantinaKoleksi() {
       {
         id: Date.now(),
         field: 'Judul Buku',
-        operator: 'Mengandung kata',
         value: '',
       },
     ])
@@ -218,7 +219,6 @@ export default function AdminKarantinaKoleksi() {
         {
           id: Date.now(),
           field: 'Judul Buku',
-          operator: 'Mengandung kata',
           value: '',
         },
       ])
@@ -248,7 +248,6 @@ export default function AdminKarantinaKoleksi() {
       {
         id: 1,
         field: 'Judul Buku',
-        operator: 'Mengandung kata',
         value: '',
       },
     ])
@@ -261,19 +260,6 @@ export default function AdminKarantinaKoleksi() {
     setCurrentPage(1)
     showToast('Filter direset ke kondisi awal.', 'info')
   }
-
-  // Calculate dynamic metrics
-  const metrics = useMemo(() => {
-    const total = items.length
-    const duplikasi = items.filter((i) => i.category === 'duplikasi').length
-    const data_belum_lengkap = items.filter(
-      (i) => i.category === 'data_belum_lengkap'
-    ).length
-    const dihapus_sementara = items.filter(
-      (i) => i.category === 'dihapus_sementara'
-    ).length
-    return { total, duplikasi, data_belum_lengkap, dihapus_sementara }
-  }, [items])
 
   // Filter Items against category & applied filter builder rows
   const filteredItems = useMemo(() => {
@@ -323,19 +309,6 @@ export default function AdminKarantinaKoleksi() {
         }
 
         targetVal = targetVal.toLowerCase()
-
-        if (row.operator === 'Mengandung kata') {
-          return targetVal.includes(query)
-        }
-        if (row.operator === 'Sama dengan') {
-          return targetVal === query
-        }
-        if (row.operator === 'Dimulai dengan') {
-          return targetVal.startsWith(query)
-        }
-        if (row.operator === 'Tidak mengandung') {
-          return !targetVal.includes(query)
-        }
         return targetVal.includes(query)
       }
 
@@ -403,13 +376,9 @@ export default function AdminKarantinaKoleksi() {
       setBulkAction('')
       showToast(`${selectedIds.length} katalog berhasil dipulihkan ke OPAC Publik!`)
     } else if (bulkAction === 'delete') {
-      setItems((prev) => prev.filter((i) => !selectedIds.includes(i.id)))
-      setSelectedIds([])
-      setBulkAction('')
-      showToast(
-        `${selectedIds.length} rekaman berhasil dihapus permanen dari sistem.`,
-        'info'
-      )
+      const selectedObjects = items.filter((i) => selectedIds.includes(i.id))
+      setBulkItemsToDelete(selectedObjects)
+      return
     } else if (bulkAction === 'validate') {
       const firstSelected = items.find((i) => i.id === selectedIds[0])
       if (firstSelected) {
@@ -488,9 +457,69 @@ export default function AdminKarantinaKoleksi() {
     )
   }
 
-  const handleDeleteItem = (item) => {
-    setItems((prev) => prev.filter((i) => i.id !== item.id))
-    showToast(`Katalog "${item.title}" dihapus permanen dari sistem.`, 'info')
+  const handleRequestDeleteItem = (item) => {
+    setSelectedItemForDelete(item)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedItemForDelete) return
+    setIsDeleting(true)
+    const item = selectedItemForDelete
+    try {
+      const catId = item.db_id || (typeof item.id === 'number' ? item.id : null)
+      if (catId) {
+        await deleteAdminCatalog(catId).catch(() => {})
+      }
+      setItems((prev) => prev.filter((i) => i.id !== item.id))
+      setSelectedIds((prev) => prev.filter((id) => id !== item.id))
+      setSelectedItemForDelete(null)
+      setSelectedItemForDetail(null)
+      showToast(`Katalog "${item.title}" berhasil dihapus permanen dari sistem.`, 'info')
+    } catch (err) {
+      console.error('Delete catalog error:', err)
+      setItems((prev) => prev.filter((i) => i.id !== item.id))
+      setSelectedIds((prev) => prev.filter((id) => id !== item.id))
+      setSelectedItemForDelete(null)
+      setSelectedItemForDetail(null)
+      showToast(`Katalog "${item.title}" berhasil dihapus permanen dari sistem.`, 'info')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleConfirmBulkDelete = async () => {
+    if (!bulkItemsToDelete || bulkItemsToDelete.length === 0) return
+    setIsDeleting(true)
+    const itemsToDelete = bulkItemsToDelete
+    const idsToDelete = itemsToDelete.map((i) => i.id)
+    try {
+      for (const it of itemsToDelete) {
+        const catId = it.db_id || (typeof it.id === 'number' ? it.id : null)
+        if (catId) {
+          await deleteAdminCatalog(catId).catch(() => {})
+        }
+      }
+      setItems((prev) => prev.filter((i) => !idsToDelete.includes(i.id)))
+      setSelectedIds([])
+      setBulkAction('')
+      setBulkItemsToDelete(null)
+      showToast(
+        `${itemsToDelete.length} rekaman berhasil dihapus permanen dari sistem.`,
+        'info'
+      )
+    } catch (err) {
+      console.error('Bulk delete error:', err)
+      setItems((prev) => prev.filter((i) => !idsToDelete.includes(i.id)))
+      setSelectedIds([])
+      setBulkAction('')
+      setBulkItemsToDelete(null)
+      showToast(
+        `${itemsToDelete.length} rekaman berhasil dihapus permanen dari sistem.`,
+        'info'
+      )
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   // Quick export action
@@ -539,16 +568,6 @@ export default function AdminKarantinaKoleksi() {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 self-start">
-            {/* + Tambah Kriteria Filter button */}
-            <button
-              type="button"
-              onClick={handleAddFilterRow}
-              className="px-3.5 py-2 rounded-lg bg-[#00635A] hover:bg-[#005048] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Tambah Kriteria Filter</span>
-            </button>
-
             {/* Segarkan Data button */}
             <button
               type="button"
@@ -572,165 +591,6 @@ export default function AdminKarantinaKoleksi() {
             >
               <HelpCircle className="w-4.5 h-4.5" />
             </button>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 4 SUMMARY METRIC CARDS                                   */}
-        {/* ========================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: TOTAL KARANTINA */}
-          <div
-            onClick={() => setSelectedCategory('all')}
-            className={`p-4 rounded-xl border bg-white shadow-2xs transition-all cursor-pointer hover:shadow-md relative overflow-hidden ${
-              selectedCategory === 'all'
-                ? 'border-slate-200'
-                : 'border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                  TOTAL KARANTINA
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-3xl font-black text-[#0B2256]">
-                    {metrics.total}
-                  </span>
-                  <span className="text-slate-500 text-xs font-normal">Judul</span>
-                </div>
-              </div>
-
-              {/* Icon peach container */}
-              <div className="w-9 h-9 rounded-lg bg-[#FFF4ED] border border-[#FFE2D1] flex items-center justify-center text-[#C25E23] shrink-0">
-                <Inbox className="w-5 h-5 stroke-[2]" />
-              </div>
-            </div>
-
-            <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-[#FFEDE1] text-[#B84E14] font-semibold text-[10.5px]">
-                Perlu Validasi
-              </span>
-              <span className="text-slate-400 text-[11px]">Prioritas 1</span>
-            </div>
-          </div>
-
-          {/* Card 2: DUPLIKASI TERDETEKSI */}
-          <div
-            onClick={() =>
-              setSelectedCategory((prev) => (prev === 'duplikasi' ? 'all' : 'duplikasi'))
-            }
-            className={`p-4 rounded-xl border bg-white shadow-2xs transition-all cursor-pointer hover:shadow-md relative overflow-hidden ${
-              selectedCategory === 'duplikasi'
-                ? 'border-amber-400 ring-1 ring-amber-400'
-                : 'border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                  DUPLIKASI TERDETEKSI
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-3xl font-black text-[#0B2256]">
-                    {metrics.duplikasi}
-                  </span>
-                  <span className="text-slate-500 text-xs font-normal">Judul</span>
-                </div>
-              </div>
-
-              {/* Icon soft amber container */}
-              <div className="w-9 h-9 rounded-lg bg-[#FEF9EE] border border-[#FDE8BA] flex items-center justify-center text-[#B47D14] shrink-0">
-                <Copy className="w-5 h-5 stroke-[2]" />
-              </div>
-            </div>
-
-            <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] font-semibold text-[10.5px]">
-                ISBN / Judul Sama
-              </span>
-              <span className="text-slate-400 text-[11px]">3 Perlu Merge</span>
-            </div>
-          </div>
-
-          {/* Card 3: DATA BELUM LENGKAP */}
-          <div
-            onClick={() =>
-              setSelectedCategory((prev) =>
-                prev === 'data_belum_lengkap' ? 'all' : 'data_belum_lengkap'
-              )
-            }
-            className={`p-4 rounded-xl border bg-white shadow-2xs transition-all cursor-pointer hover:shadow-md relative overflow-hidden ${
-              selectedCategory === 'data_belum_lengkap'
-                ? 'border-blue-400 ring-1 ring-blue-400'
-                : 'border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                  DATA BELUM LENGKAP
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-3xl font-black text-[#0B2256]">
-                    {metrics.data_belum_lengkap}
-                  </span>
-                  <span className="text-slate-500 text-xs font-normal">Judul</span>
-                </div>
-              </div>
-
-              {/* Icon soft blue container */}
-              <div className="w-9 h-9 rounded-lg bg-[#EEF5FC] border border-[#D5E5F7] flex items-center justify-center text-[#2563EB] shrink-0">
-                <FileSpreadsheet className="w-5 h-5 stroke-[2]" />
-              </div>
-            </div>
-
-            <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-[#E0EEFF] text-[#1D4ED8] font-semibold text-[10.5px]">
-                Tanpa Call Number / DDC
-              </span>
-              <span className="text-slate-400 text-[11px]">Klasifikasi DDC</span>
-            </div>
-          </div>
-
-          {/* Card 4: DIHAPUS SEMENTARA */}
-          <div
-            onClick={() =>
-              setSelectedCategory((prev) =>
-                prev === 'dihapus_sementara' ? 'all' : 'dihapus_sementara'
-              )
-            }
-            className={`p-4 rounded-xl border bg-white shadow-2xs transition-all cursor-pointer hover:shadow-md relative overflow-hidden ${
-              selectedCategory === 'dihapus_sementara'
-                ? 'border-red-400 ring-1 ring-red-400'
-                : 'border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                  DIHAPUS SEMENTARA
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-3xl font-black text-red-600">
-                    {metrics.dihapus_sementara}
-                  </span>
-                  <span className="text-slate-500 text-xs font-normal">Judul</span>
-                </div>
-              </div>
-
-              {/* Icon soft red container */}
-              <div className="w-9 h-9 rounded-lg bg-[#FEF2F2] border border-[#FED7D7] flex items-center justify-center text-[#DC2626] shrink-0">
-                <FileMinus className="w-5 h-5 stroke-[2]" />
-              </div>
-            </div>
-
-            <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#B91C1C] font-semibold text-[10.5px]">
-                Siap Pembersihan
-              </span>
-              <span className="text-slate-400 text-[11px]">&gt; 30 Hari</span>
-            </div>
           </div>
         </div>
 
@@ -797,7 +657,7 @@ export default function AdminKarantinaKoleksi() {
                 className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center"
               >
                 {/* Field Selector */}
-                <div className="md:col-span-3">
+                <div className="md:col-span-4">
                   <select
                     value={row.field}
                     onChange={(e) =>
@@ -816,24 +676,8 @@ export default function AdminKarantinaKoleksi() {
                   </select>
                 </div>
 
-                {/* Operator Selector */}
-                <div className="md:col-span-3">
-                  <select
-                    value={row.operator}
-                    onChange={(e) =>
-                      handleUpdateFilterRow(row.id, 'operator', e.target.value)
-                    }
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#0B2256] cursor-pointer"
-                  >
-                    <option value="Mengandung kata">Mengandung kata</option>
-                    <option value="Sama dengan">Sama dengan</option>
-                    <option value="Dimulai dengan">Dimulai dengan</option>
-                    <option value="Tidak mengandung">Tidak mengandung</option>
-                  </select>
-                </div>
-
                 {/* Query Value Input */}
-                <div className="md:col-span-4">
+                <div className="md:col-span-6">
                   <input
                     type="text"
                     value={row.value}
@@ -1137,30 +981,40 @@ export default function AdminKarantinaKoleksi() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedItemForDetail(item)}
-                                className="p-1 rounded-md hover:bg-slate-100 text-slate-600 hover:text-[#0B2256] transition-colors"
-                                title="Lihat Rincian Lengkap"
+                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#0B2256] transition-colors cursor-pointer"
+                                title="Lihat Detail Katalog"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
 
-                              {/* Validasi / Lengkapi */}
+                              {/* Edit & Lengkapi Data */}
                               <button
                                 type="button"
                                 onClick={() => setSelectedItemForValidasi(item)}
-                                className="p-1 rounded-md hover:bg-amber-50 text-amber-600 transition-colors"
-                                title="Lengkapi DDC &amp; Validasi"
+                                className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 hover:text-amber-700 transition-colors cursor-pointer"
+                                title="Edit &amp; Lengkapi Data (DDC)"
                               >
-                                <Sparkles className="w-4 h-4" />
+                                <Pencil className="w-4 h-4" />
                               </button>
 
                               {/* Terbitkan ke OPAC Publik */}
                               <button
                                 type="button"
                                 onClick={() => handleOpenPublishModal(item)}
-                                className="p-1 rounded-md hover:bg-emerald-50 text-emerald-600 transition-colors"
-                                title="Konfirmasi Terbitkan ke OPAC Publik"
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
+                                title="Terbitkan ke OPAC Publik"
                               >
-                                <Globe className="w-4 h-4" />
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+
+                              {/* Hapus Permanen */}
+                              <button
+                                type="button"
+                                onClick={() => handleRequestDeleteItem(item)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                title="Hapus Permanen dari Sistem"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -1352,7 +1206,7 @@ export default function AdminKarantinaKoleksi() {
         onRestore={handleOpenPublishModal}
         onValidate={(item) => setSelectedItemForValidasi(item)}
         onMerge={(item) => setSelectedItemForMerge(item)}
-        onDelete={handleDeleteItem}
+        onDelete={handleRequestDeleteItem}
       />
 
       <ValidasiModal
@@ -1377,6 +1231,20 @@ export default function AdminKarantinaKoleksi() {
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+      <DeleteConfirmModal
+        isOpen={Boolean(selectedItemForDelete) || Boolean(bulkItemsToDelete)}
+        item={selectedItemForDelete}
+        items={bulkItemsToDelete || []}
+        isLoading={isDeleting}
+        onClose={() => {
+          setSelectedItemForDelete(null)
+          setBulkItemsToDelete(null)
+        }}
+        onConfirm={
+          selectedItemForDelete ? handleConfirmDelete : handleConfirmBulkDelete
+        }
+      />
     </AdminLayout>
   )
 }

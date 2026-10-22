@@ -14,6 +14,8 @@ import {
   ExternalLink,
   ShieldAlert,
   ArrowRight,
+  Pencil,
+  CheckCircle2,
   Sparkles,
   Globe,
 } from 'lucide-react'
@@ -192,11 +194,11 @@ export default function DetailModal({
         {/* Modal Actions Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
           <button
+            type="button"
             onClick={() => {
-              onClose()
               onDelete(item)
             }}
-            className="px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-200 border border-transparent font-semibold text-xs transition-colors flex items-center gap-1.5"
+            className="px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-200 border border-transparent font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Hapus Permanen</span>
@@ -208,9 +210,9 @@ export default function DetailModal({
                 onClose()
                 onValidate(item)
               }}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Pencil className="w-3.5 h-3.5" />
               <span>Lengkapi &amp; Validasi Data</span>
             </button>
 
@@ -221,7 +223,7 @@ export default function DetailModal({
               }}
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <Globe className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Terbitkan ke OPAC</span>
             </button>
           </div>

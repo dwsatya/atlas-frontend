@@ -94,7 +94,7 @@ export default function PublishOpacModal({
         <div className="bg-[#0B2256] text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
-              <Globe className="w-4.5 h-4.5" />
+              <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white leading-snug">
@@ -291,7 +291,7 @@ export default function PublishOpacModal({
               disabled={isSubmitting}
               className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-semibold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Globe className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? 'Menerbitkan...' : 'Terbitkan Sekarang ke OPAC'}</span>
             </button>
           </div>
