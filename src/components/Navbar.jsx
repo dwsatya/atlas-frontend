@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logoatlas from '../assets/logoatlas.png'
-import { resolvePhotoUrl } from '../utils/ktaImageGenerator'
 import { notifyLogoutSuccess } from '../utils/notification'
 import MobileBottomNav from './MobileBottomNav'
 
@@ -18,9 +17,6 @@ export default function Navbar() {
   // Cek otentikasi
   const token = typeof window !== 'undefined' ? localStorage.getItem('atlas_token') : null
   const isAuthenticated = Boolean(user || token)
-
-  const rawPhoto = user?.photo_url || user?.photo_path || user?.avatar || null
-  const userPhoto = resolvePhotoUrl(rawPhoto)
 
   const handleLogout = () => {
     const isAdmin = Boolean(user?.role === 'Administrator' || user?.role === 'Admin' || user?.username)
@@ -131,31 +127,18 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => navigate('/profile')}
-                className={`bg-white hover:bg-slate-100 text-[#002B66] px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer ${isProfileActive ? 'ring-2 ring-blue-300' : ''
+                className={`bg-white hover:bg-slate-100 text-[#002B66] px-5 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer ${isProfileActive ? 'ring-2 ring-blue-300' : ''
                   }`}
                 title="Lihat Profil Anggota"
               >
-                {userPhoto ? (
-                  <img
-                    src={userPhoto}
-                    alt={user?.name || 'User'}
-                    className="w-5 h-5 rounded-full object-cover shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
+                <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
                   />
-                ) : (
-                  <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                    />
-                  </svg>
-                )}
-                <span className="max-w-[130px] truncate">
-                  {user?.name ? user.name.split(' ')[0] : 'Profile'}
-                </span>
+                </svg>
+                <span>Profile</span>
               </button>
             </div>
           ) : (

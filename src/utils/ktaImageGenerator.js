@@ -10,26 +10,36 @@ export function resolvePhotoUrl(photo) {
   if (typeof photo !== 'string') return photo
   if (photo.startsWith('blob:') || photo.startsWith('data:')) return photo
 
-  // Koreksi jika URL lama tidak sengaja memuat /profile-photos/ tanpa /storage/
-  if (photo.includes('/profile-photos/') && !photo.includes('/storage/profile-photos/')) {
-    photo = photo.replace('/profile-photos/', '/storage/profile-photos/')
+  let cleaned = photo.trim()
+
+  // 1. Bersihkan dobel /storage/ (misal: /storage//storage/ atau /storage/storage/)
+  cleaned = cleaned
+    .replace(/\/storage\/{2,}/g, '/storage/')
+    .replace(/\/storage\/+storage\//g, '/storage/')
+
+  // 2. Koreksi jika URL lama tidak sengaja memuat /profile-photos/ tanpa /storage/
+  if (cleaned.includes('/profile-photos/') && !cleaned.includes('/storage/profile-photos/')) {
+    cleaned = cleaned.replace('/profile-photos/', '/storage/profile-photos/')
   }
 
-  if (photo.startsWith('http://') || photo.startsWith('https://')) {
-    return photo
+  // 3. Jika sudah merupakan full URL (http:// atau https://)
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return cleaned
+      .replace(/\/storage\/{2,}/g, '/storage/')
+      .replace(/\/storage\/+storage\//g, '/storage/')
   }
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-  const cleaned = photo.replace(/^\/+/, '')
-  if (cleaned.startsWith('storage/')) {
-    return `${backendUrl}/${cleaned}`
+  const pathWithoutSlash = cleaned.replace(/^\/+/, '')
+  if (pathWithoutSlash.startsWith('storage/')) {
+    return `${backendUrl}/${pathWithoutSlash}`
   }
-  return `${backendUrl}/storage/${cleaned}`
+  return `${backendUrl}/storage/${pathWithoutSlash}`
 }
 
 /**
  * Helper untuk memuat Image HTML secara async dan tahan CORS
- * Menggunakan strategi multi-fallback (Blob URL via Vite proxy, backend CORS /api/storage/, dan direct Image)
+ * Menggunakan strategi multi-fallback (Blob URL via Vite proxy, direct backend storage, dan direct Image)
  */
 export async function loadImage(src) {
   if (!src) return null
@@ -44,21 +54,29 @@ export async function loadImage(src) {
     })
   }
 
+  // Normalisasi URL sumber dari duplikasi slash/storage
+  const normalizedSrc = src
+    .replace(/\/storage\/{2,}/g, '/storage/')
+    .replace(/\/storage\/+storage\//g, '/storage/')
+
   // 2. Siapkan daftar kandidat URL
   const candidateUrls = []
 
-  if (src.includes('/storage/')) {
-    const storagePath = src.split('/storage/')[1]
-    // a. Relative path via Vite dev server proxy (same-origin, 100% bebas CORS di browser)
-    candidateUrls.push(`/storage/${storagePath}`)
-    // b. Endpoint publik Laravel dengan header Access-Control-Allow-Origin: *
-    candidateUrls.push(`http://localhost:8000/api/storage/${storagePath}`)
-    // c. Direct localhost:8000 storage
-    candidateUrls.push(`http://localhost:8000/storage/${storagePath}`)
+  if (normalizedSrc.includes('/storage/')) {
+    const lastStorageIdx = normalizedSrc.lastIndexOf('/storage/')
+    const rawStoragePath = normalizedSrc.substring(lastStorageIdx + '/storage/'.length)
+    const storagePath = rawStoragePath.replace(/^\/+/, '')
+
+    if (storagePath) {
+      // a. Relative path via Vite dev server proxy (same-origin, 100% bebas CORS di browser)
+      candidateUrls.push(`/storage/${storagePath}`)
+      // b. Direct localhost:8000 storage
+      candidateUrls.push(`http://localhost:8000/storage/${storagePath}`)
+    }
   }
 
-  if (!candidateUrls.includes(src)) {
-    candidateUrls.push(src)
+  if (!candidateUrls.includes(normalizedSrc)) {
+    candidateUrls.push(normalizedSrc)
   }
 
   // 3. Coba unduh via fetch -> Blob URL terlebih dahulu agar tidak menodai (taint) Canvas
