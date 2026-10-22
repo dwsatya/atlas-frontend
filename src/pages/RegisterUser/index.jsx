@@ -11,16 +11,37 @@ export default function RegisterUser() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
+
+    // Kriteria validasi password: min 8 karakter, 1 angka, 1 simbol
+    const hasMinLength = password.length >= 8
+    const hasNumber = /\d/.test(password)
+    const hasSymbol = /[^A-Za-z0-9\s]/.test(password)
+    const isPasswordValid = hasMinLength && hasNumber && hasSymbol
+    const passwordsMatch = Boolean(confirmPassword && password === confirmPassword)
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        if (!email || !password) return
-        if (password.length < 6) {
-            alert('Password minimal harus 6 karakter!')
+        setErrorMessage('')
+
+        if (!email.trim() || !password) {
+            setErrorMessage('Email dan password wajib diisi.')
+            return
+        }
+        if (!hasMinLength) {
+            setErrorMessage('Password minimal harus 8 karakter.')
+            return
+        }
+        if (!hasNumber) {
+            setErrorMessage('Password harus mengandung minimal 1 angka (0-9).')
+            return
+        }
+        if (!hasSymbol) {
+            setErrorMessage('Password harus mengandung minimal 1 simbol (contoh: !@#$%^&*).')
             return
         }
         if (password !== confirmPassword) {
-            alert('Password dan Konfirmasi Password tidak cocok!')
+            setErrorMessage('Password dan Konfirmasi Password tidak cocok!')
             return
         }
         // Proceed to next step: form data diri
@@ -72,6 +93,26 @@ export default function RegisterUser() {
                     Daftar Anggota Baru
                 </h1>
 
+                {/* Error Banner */}
+                {errorMessage && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-xs sm:text-sm flex items-start gap-2.5">
+                        <svg
+                            className="w-5 h-5 shrink-0 text-red-500 mt-0.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                        <span className="leading-relaxed">{errorMessage}</span>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Email Input */}
                     <div className="space-y-1.5">
@@ -82,7 +123,10 @@ export default function RegisterUser() {
                             type="email"
                             required
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                if (errorMessage) setErrorMessage('')
+                            }}
                             placeholder="example@domain.com"
                             className="w-full px-5 py-3 rounded-full border border-slate-300 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#032360] focus:ring-1 focus:ring-[#032360] transition-all"
                         />
@@ -98,9 +142,16 @@ export default function RegisterUser() {
                                 type={showPassword ? 'text' : 'password'}
                                 required
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
-                                className="w-full px-5 py-3 pr-12 rounded-full border border-slate-300 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#032360] focus:ring-1 focus:ring-[#032360] transition-all"
+                                onChange={(e) => {
+                                    setPassword(e.target.value)
+                                    if (errorMessage) setErrorMessage('')
+                                }}
+                                placeholder="Masukkan password"
+                                className={`w-full px-5 py-3 pr-12 rounded-full border text-slate-800 placeholder-slate-400 text-sm focus:outline-none transition-all ${
+                                    password && isPasswordValid
+                                        ? 'border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                                        : 'border-slate-300 focus:border-[#032360] focus:ring-1 focus:ring-[#032360]'
+                                }`}
                             />
                             <button
                                 type="button"
@@ -151,6 +202,48 @@ export default function RegisterUser() {
                                 )}
                             </button>
                         </div>
+
+                        {/* Password Requirements Information Box */}
+                        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2 text-xs mt-2">
+                            <div className="flex items-center gap-1.5 font-bold text-[#032360]">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Ketentuan Password:</span>
+                            </div>
+                            <ul className="space-y-1.5 pl-0.5">
+                                <li className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasMinLength ? (
+                                        <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mx-1.5" />
+                                    )}
+                                    <span>Minimal 8 karakter</span>
+                                </li>
+                                <li className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasNumber ? (
+                                        <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mx-1.5" />
+                                    )}
+                                    <span>Minimal 1 angka (0-9)</span>
+                                </li>
+                                <li className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasSymbol ? (
+                                        <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mx-1.5" />
+                                    )}
+                                    <span>Minimal 1 simbol (contoh: ! @ # $ % ^ & *)</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     {/* Konfirmasi Password Input */}
@@ -163,9 +256,18 @@ export default function RegisterUser() {
                                 type={showConfirmPassword ? 'text' : 'password'}
                                 required
                                 value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Password"
-                                className="w-full px-5 py-3 pr-12 rounded-full border border-slate-300 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#032360] focus:ring-1 focus:ring-[#032360] transition-all"
+                                onChange={(e) => {
+                                    setConfirmPassword(e.target.value)
+                                    if (errorMessage) setErrorMessage('')
+                                }}
+                                placeholder="Ulangi password"
+                                className={`w-full px-5 py-3 pr-12 rounded-full border text-slate-800 placeholder-slate-400 text-sm focus:outline-none transition-all ${
+                                    confirmPassword
+                                        ? passwordsMatch
+                                            ? 'border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                                            : 'border-red-400 focus:ring-1 focus:ring-red-400'
+                                        : 'border-slate-300 focus:border-[#032360] focus:ring-1 focus:ring-[#032360]'
+                                }`}
                             />
                             <button
                                 type="button"
@@ -216,6 +318,27 @@ export default function RegisterUser() {
                                 )}
                             </button>
                         </div>
+
+                        {/* Konfirmasi Password Helper / Feedback */}
+                        {confirmPassword && (
+                            <div className="text-xs px-2 pt-1">
+                                {passwordsMatch ? (
+                                    <span className="text-emerald-600 font-semibold flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Konfirmasi password cocok
+                                    </span>
+                                ) : (
+                                    <span className="text-red-500 font-medium flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        Konfirmasi password belum cocok
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Centered Pill Submit Button: Selanjutnya → */}
