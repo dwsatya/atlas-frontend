@@ -84,10 +84,22 @@ export function KtaFront({
   const validUntil = useMemo(() => formatValidityDate(createdAt), [createdAt])
   const barcodeData = useMemo(() => generateCode128(memberNo), [memberNo])
   const resolvedPhoto = useMemo(() => resolvePhotoUrl(photo), [photo])
+  const [currentPhotoSrc, setCurrentPhotoSrc] = useState(resolvedPhoto)
 
   useEffect(() => {
     setImgError(false)
+    setCurrentPhotoSrc(resolvedPhoto)
   }, [resolvedPhoto])
+
+  const handleImgError = () => {
+    if (currentPhotoSrc && currentPhotoSrc.includes('/storage/') && !currentPhotoSrc.startsWith('/storage/')) {
+      const lastIdx = currentPhotoSrc.lastIndexOf('/storage/')
+      const storagePath = currentPhotoSrc.substring(lastIdx + '/storage/'.length).replace(/^\/+/, '')
+      setCurrentPhotoSrc(`/storage/${storagePath}`)
+    } else {
+      setImgError(true)
+    }
+  }
 
   return (
     <div
@@ -114,12 +126,12 @@ export function KtaFront({
         }}
       >
         <div className="h-full aspect-[2/3] overflow-hidden bg-white flex items-center justify-center">
-          {resolvedPhoto && !imgError ? (
+          {currentPhotoSrc && !imgError ? (
             <img
-              src={resolvedPhoto}
+              src={currentPhotoSrc}
               alt={name}
               className="w-full h-full object-cover object-top"
-              onError={() => setImgError(true)}
+              onError={handleImgError}
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-1 text-slate-400 font-medium leading-tight">
