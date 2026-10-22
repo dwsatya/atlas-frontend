@@ -57,14 +57,17 @@ export default function RegisterUser() {
     }
 
     return (
-        <div
-            className="min-h-screen w-full bg-cover bg-center bg-no-repeat relative flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white"
-            style={{
-                backgroundImage: `url(${background1}), url('/background1.jpeg')`,
-            }}
-        >
-            {/* Dark Overlay over the background image */}
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[0.5px]" />
+        <div className="relative h-screen w-full overflow-hidden selection:bg-indigo-500 selection:text-white">
+            {/* Fixed Background Image */}
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+                style={{
+                    backgroundImage: `url(${background1}), url('/background1.jpeg')`,
+                }}
+            >
+                {/* Dark Overlay over the background image */}
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[0.5px]" />
+            </div>
 
             {/* Top-Left 'Kembali' Button */}
             <button
@@ -87,8 +90,10 @@ export default function RegisterUser() {
                 <span>Kembali</span>
             </button>
 
-            {/* Centered White Register Card */}
-            <div className="relative z-10 w-full max-w-[450px] bg-white rounded-3xl shadow-2xl p-8 sm:p-10 space-y-6">
+            {/* Scrollable Container - Hanya form registrasi yang scroll */}
+            <div className="relative z-10 h-full w-full overflow-y-auto flex items-center justify-center p-4 py-8">
+                {/* Centered White Register Card */}
+                <div className="w-full max-w-[440px] bg-white rounded-3xl shadow-2xl p-6 sm:p-8 space-y-4 my-auto">
                 <h1 className="text-3xl font-extrabold text-center text-[#032360] tracking-tight">
                     Daftar Anggota Baru
                 </h1>
@@ -146,7 +151,7 @@ export default function RegisterUser() {
                                     setPassword(e.target.value)
                                     if (errorMessage) setErrorMessage('')
                                 }}
-                                placeholder="Masukkan password"
+                                placeholder="Password"
                                 className={`w-full px-5 py-3 pr-12 rounded-full border text-slate-800 placeholder-slate-400 text-sm focus:outline-none transition-all ${
                                     password && isPasswordValid
                                         ? 'border-emerald-500 focus:ring-1 focus:ring-emerald-500'
@@ -260,7 +265,7 @@ export default function RegisterUser() {
                                     setConfirmPassword(e.target.value)
                                     if (errorMessage) setErrorMessage('')
                                 }}
-                                placeholder="Ulangi password"
+                                placeholder="Password"
                                 className={`w-full px-5 py-3 pr-12 rounded-full border text-slate-800 placeholder-slate-400 text-sm focus:outline-none transition-all ${
                                     confirmPassword
                                         ? passwordsMatch
@@ -341,29 +346,33 @@ export default function RegisterUser() {
                         )}
                     </div>
 
-                    {/* Centered Pill Submit Button: Selanjutnya → */}
-                    <div className="flex justify-center pt-3">
+                    {/* Submit Button: Selanjutnya (Full-width, tanpa tanda panah, ukuran sama dengan Masuk dengan Google) */}
+                    <div className="pt-1">
                         <button
                             type="submit"
-                            className="w-full py-3.5 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] cursor-pointer"
+                            className="w-full py-3 px-4 rounded-full bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.99] flex items-center justify-center cursor-pointer"
                         >
                             <span>Selanjutnya</span>
                         </button>
                     </div>
                 </form>
 
-                {/* Social Register with Google */}
-                <div className="flex items-center justify-center gap-3 pt-2 text-xs sm:text-sm font-bold text-[#032360]">
-                    <span>Atau daftar dengan:</span>
+                {/* Separator / Atau: */}
+                <div className="text-center text-xs sm:text-sm font-semibold text-[#032360] -mt-1">
+                    Atau:
+                </div>
+
+                {/* Social Login dengan Google (Full Pill Button) */}
+                <div>
                     <button
                         type="button"
                         onClick={() => {
                             window.location.href = getGoogleLoginUrl()
                         }}
-                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
-                        aria-label="Daftar dengan Google"
+                        className="w-full py-3 px-4 rounded-full border border-[#032360] bg-white hover:bg-slate-50 text-[#032360] font-bold text-sm sm:text-base shadow-xs hover:shadow-md transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-3 cursor-pointer"
+                        aria-label="Masuk dengan Google"
                     >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                             <path
                                 fill="#4285F4"
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -381,9 +390,23 @@ export default function RegisterUser() {
                                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                             />
                         </svg>
+                        <span>Masuk dengan Google</span>
+                    </button>
+                </div>
+
+                {/* Link Sudah menjadi anggota? Masuk */}
+                <div className="text-center text-xs sm:text-sm text-[#032360] pt-1">
+                    Sudah menjadi anggota?{' '}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="font-bold text-[#032360] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
+                    >
+                        Masuk
                     </button>
                 </div>
             </div>
         </div>
+    </div>
     )
 }
