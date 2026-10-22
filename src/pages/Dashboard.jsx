@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   RotateCw,
@@ -15,129 +15,128 @@ import {
   ExternalLink,
   ChevronRight,
   Search,
+  Loader2,
 } from 'lucide-react'
 import AdminLayout from '../components/admin/AdminLayout'
+import {
+  fetchAdminDashboard,
+  scanAdminBarcode,
+  syncAdminDashboard,
+  exportAdminReport,
+} from '../services/api'
 
 export default function Dashboard() {
   const navigate = useNavigate()
 
   // State
   const [barcodeInput, setBarcodeInput] = useState('')
+  const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showDdcModal, setShowDdcModal] = useState(false)
   const [showOpnameModal, setShowOpnameModal] = useState(false)
 
+  // Live Database States
+  const [stats, setStats] = useState(null)
+  const [ddcTop, setDdcTop] = useState([])
+  const [ddcAll, setDdcAll] = useState([])
+  const [recentActivities, setRecentActivities] = useState([])
+  const [physicalStatus, setPhysicalStatus] = useState(null)
+  const [topBooks, setTopBooks] = useState([])
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
+    setTimeout(() => setToast(null), 3500)
   }
 
+  // Load live data from Backend API
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await fetchAdminDashboard()
+      if (res?.data) {
+        setStats(res.data.stats || null)
+        setDdcTop(res.data.ddc?.top || [])
+        setDdcAll(res.data.ddc?.all || [])
+        setRecentActivities(res.data.recent_activities || [])
+        setPhysicalStatus(res.data.physical_status || null)
+        setTopBooks(res.data.top_books || [])
+      }
+    } catch (err) {
+      console.warn('Could not load live dashboard data from API, using fallback:', err)
+      // Fallback state jika backend belum siap
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
+
   // Handle Quick Barcode Process
-  const handleProcessBarcode = (e) => {
+  const handleProcessBarcode = async (e) => {
     e.preventDefault()
-    if (!barcodeInput.trim()) {
-      showToast('Arahkan scanner atau masukkan nomor barcode eksemplar!', 'error')
+    const query = barcodeInput.trim()
+    if (!query) {
+      showToast('Arahkan scanner atau masukkan nomor barcode eksemplar/anggota!', 'error')
       return
     }
-    showToast(`Barcode ${barcodeInput} terdeteksi: "Bahasa Indonesia" - Status: Tersedia di Rak A-12`, 'success')
-    setBarcodeInput('')
+
+    try {
+      setIsScanning(true)
+      const res = await scanAdminBarcode(query)
+      if (res?.success) {
+        if (res.type === 'collection') {
+          showToast(
+            `Koleksi Ditemukan: "${res.data.title}" - Status: ${res.data.status} (${res.data.location})`,
+            'success'
+          )
+        } else if (res.type === 'member') {
+          showToast(
+            `Anggota Terdaftar: "${res.data.name}" (${res.data.member_no}) - ${res.data.category}`,
+            'success'
+          )
+        } else {
+          showToast(res.message || 'Data terdeteksi di database.', 'success')
+        }
+        setBarcodeInput('')
+      }
+    } catch (err) {
+      showToast(err.message || `Barcode "${query}" tidak ditemukan di database.`, 'error')
+    } finally {
+      setIsScanning(false)
+    }
   }
 
   // Handle Data Sync
-  const handleSyncData = () => {
-    setIsSyncing(true)
-    setTimeout(() => {
+  const handleSyncData = async () => {
+    try {
+      setIsSyncing(true)
+      const res = await syncAdminDashboard()
+      await loadDashboardData()
+      showToast(res?.message || 'Sinkronisasi data database DAPD Buleleng selesai!')
+    } catch (err) {
+      showToast(err.message || 'Gagal melakukan sinkronisasi database.', 'error')
+    } finally {
       setIsSyncing(false)
-      showToast('Sinkronisasi data database DAPD Buleleng selesai!')
-    }, 1200)
+    }
   }
 
   // Handle Export Rekap
-  const handleExport = () => {
-    showToast('Rekapitulasi perpustakaan (Excel/PDF) berhasil diexport!')
+  const handleExport = async (format = 'excel') => {
+    try {
+      setIsExporting(true)
+      await exportAdminReport('circulation', format)
+      showToast(`Rekapitulasi sirkulasi perpustakaan (${format.toUpperCase()}) berhasil diunduh!`)
+    } catch (err) {
+      showToast(err.message || 'Gagal mengekspor laporan perpustakaan.', 'error')
+    } finally {
+      setIsExporting(false)
+    }
   }
-
-  // Recent processing activities matching the attachment
-  const recentActivities = [
-    {
-      id: 1,
-      title: 'Bahasa Indonesia',
-      subtitle: 'Dr. H. M. Zainuddin, M.A. • Erlangga',
-      ddc: '297.01',
-      ddcColor: 'text-blue-600',
-      officer: 'Ridwan S.',
-      time: '16/09 14:18',
-      status: 'Draft Siap',
-      statusBadge: 'bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]',
-      actionText: 'Edit',
-      actionColor: 'text-blue-600 hover:text-blue-800',
-    },
-    {
-      id: 2,
-      title: 'Tata Kelola Kearsipan Modern Kabupaten Buleleng',
-      subtitle: 'Tim Arsiparis DAPD • Pustaka Buleleng',
-      ddc: '025.17',
-      ddcColor: 'text-blue-600',
-      officer: 'Ni Luh Putu W.',
-      time: '16/09 11:40',
-      status: 'OPAC',
-      statusBadge: 'bg-[#DBEAFE] text-[#1D4ED8] border border-[#BFDBFE]',
-      actionText: 'Edit',
-      actionColor: 'text-blue-600 hover:text-blue-800',
-    },
-    {
-      id: 3,
-      title: 'Babad Buleleng: Sejarah Panji Sakti & Pura Ki Barak',
-      subtitle: 'I Gusti Bagus Sudhyatmaka • Balai Bahasa',
-      ddc: '959.862',
-      ddcColor: 'text-blue-600',
-      officer: 'Kadek Astawa',
-      time: '15/09 16:05',
-      status: 'OPAC',
-      statusBadge: 'bg-[#DBEAFE] text-[#1D4ED8] border border-[#BFDBFE]',
-      actionText: 'Edit',
-      actionColor: 'text-blue-600 hover:text-blue-800',
-    },
-    {
-      id: 4,
-      title: 'Metodologi Riset Komputasi Berbasis Big Data',
-      subtitle: 'Prof. Dr. Ketut Suastika • Informatika',
-      ddc: '005.7',
-      ddcColor: 'text-amber-600',
-      officer: 'Ridwan S.',
-      time: '15/09 10:22',
-      status: 'Karantina',
-      statusBadge: 'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]',
-      actionText: 'Tinjau',
-      actionColor: 'text-amber-600 hover:text-amber-800',
-    },
-  ]
-
-  // Top Circulation Books
-  const topBooks = [
-    {
-      rank: 1,
-      title: 'Riset Komputasi Berbasis Big Data',
-      callNo: '297.4 SAB f',
-      loans: '84x Pinjam',
-      badgeClass: 'bg-[#2563EB] text-white',
-    },
-    {
-      rank: 2,
-      title: 'Laskar Pelangi Edisi Koleksi',
-      callNo: '813 HIR l',
-      loans: '62x Pinjam',
-      badgeClass: 'bg-[#DBEAFE] text-[#1D4ED8]',
-    },
-    {
-      rank: 3,
-      title: 'Ensiklopedia Sejarah Buleleng',
-      callNo: '959.8 BUL e',
-      loans: '51x Pinjam',
-      badgeClass: 'bg-[#DBEAFE] text-[#1D4ED8]',
-    },
-  ]
 
   return (
     <AdminLayout>
@@ -179,7 +178,7 @@ export default function Dashboard() {
             <button
               onClick={handleSyncData}
               disabled={isSyncing}
-              className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-2 shadow-2xs transition cursor-pointer"
+              className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-2 shadow-2xs transition cursor-pointer disabled:opacity-50"
             >
               <RotateCw className={`w-3.5 h-3.5 text-slate-600 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
               <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Data'}</span>
@@ -187,11 +186,16 @@ export default function Dashboard() {
 
             {/* Export Rekap */}
             <button
-              onClick={handleExport}
-              className="px-3.5 py-1.5 bg-[#0B2556] hover:bg-[#08183c] text-white text-xs font-semibold rounded-lg flex items-center gap-2 shadow-2xs transition cursor-pointer"
+              onClick={() => handleExport('excel')}
+              disabled={isExporting}
+              className="px-3.5 py-1.5 bg-[#0B2556] hover:bg-[#08183c] text-white text-xs font-semibold rounded-lg flex items-center gap-2 shadow-2xs transition cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-white" />
-              <span>Export Rekap (Excel/PDF)</span>
+              {isExporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-white" />
+              )}
+              <span>{isExporting ? 'Mengunduh...' : 'Export Rekap (Excel)'}</span>
             </button>
           </div>
         </div>
@@ -210,15 +214,17 @@ export default function Dashboard() {
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder="Arahkan barcode scanner atau ketik No. Induk / Barcode eksemplar..."
+                placeholder="Arahkan barcode scanner atau ketik No. Barcode eksemplar / No. Anggota..."
                 className="w-full bg-[#F0F4FA] border border-slate-200/60 rounded-lg pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-2xs cursor-pointer"
+              disabled={isScanning}
+              className="px-6 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
             >
-              Proses
+              {isScanning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isScanning ? 'Mencari...' : 'Proses'}</span>
             </button>
           </form>
 
@@ -245,7 +251,7 @@ export default function Dashboard() {
 
             {/* Card 2: Meja Sirkulasi Kilat */}
             <div
-              onClick={() => showToast('Membuka modul Meja Sirkulasi Kilat')}
+              onClick={() => navigate('/admin/sirkulasi/peminjaman')}
               className="p-3 rounded-xl border border-slate-200/80 hover:border-emerald-400 hover:shadow-xs transition bg-white flex items-center gap-3 cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-lg bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -264,7 +270,7 @@ export default function Dashboard() {
 
             {/* Card 3: Verifikasi Karantina */}
             <div
-              onClick={() => showToast('Membuka daftar 19 judul dalam karantina')}
+              onClick={() => navigate('/admin/karantina')}
               className="p-3 rounded-xl border border-slate-200/80 hover:border-amber-400 hover:shadow-xs transition bg-white flex items-center gap-3 cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-lg bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -276,14 +282,14 @@ export default function Dashboard() {
                   <span className="text-slate-400 group-hover:text-amber-600 transition">&gt;</span>
                 </div>
                 <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                  Tinjau draft sebelum rilis rak
+                  Tinjau {stats?.total_quarantine ?? 0} judul draf
                 </div>
               </div>
             </div>
 
             {/* Card 4: Presensi & Baca Tempat */}
             <div
-              onClick={() => showToast('Membuka buku tamu & pencatatan baca di tempat')}
+              onClick={() => navigate('/admin/presensi')}
               className="p-3 rounded-xl border border-slate-200/80 hover:border-teal-400 hover:shadow-xs transition bg-white flex items-center gap-3 cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-lg bg-[#F0FDF4] text-[#0D9488] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -309,17 +315,19 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600">Total Judul Monograf</span>
               <span className="text-[10px] font-bold text-emerald-700 bg-[#DCFCE7] px-2 py-0.5 rounded-full">
-                +128 bln ini
+                +{stats?.new_catalogs_this_month ?? 0} bln ini
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-[32px] font-extrabold text-[#0B2256] tracking-tight leading-none">
-                14.820
+                {stats?.total_catalogs !== undefined ? stats.total_catalogs.toLocaleString('id-ID') : '0'}
               </span>
               <span className="text-xs font-medium text-slate-500">Judul</span>
             </div>
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-400 text-[11px]">ISBN Terverifikasi: 13.910</span>
+              <span className="text-slate-400 text-[11px]">
+                ISBN Terverifikasi: {stats?.isbn_verified ?? 0}
+              </span>
               <Link to="/admin/entri-katalog" className="text-blue-600 font-semibold hover:underline text-[11px]">
                 Lihat Katalog &rarr;
               </Link>
@@ -336,13 +344,17 @@ export default function Dashboard() {
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-[32px] font-extrabold text-[#0B2256] tracking-tight leading-none">
-                42.650
+                {stats?.total_collections !== undefined ? stats.total_collections.toLocaleString('id-ID') : '0'}
               </span>
               <span className="text-xs font-medium text-slate-500">Buku</span>
             </div>
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-emerald-600 font-semibold">Tersedia: 38.410</span>
-              <span className="text-amber-600 font-semibold">Dipinjam: 4.240</span>
+              <span className="text-emerald-600 font-semibold">
+                Tersedia: {stats?.available_collections ?? 0}
+              </span>
+              <span className="text-amber-600 font-semibold">
+                Dipinjam: {stats?.borrowed_collections ?? 0}
+              </span>
             </div>
           </div>
 
@@ -356,45 +368,43 @@ export default function Dashboard() {
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-[32px] font-extrabold text-[#D97706] tracking-tight leading-none">
-                19
+                {stats?.total_quarantine ?? 0}
               </span>
               <span className="text-xs font-medium text-slate-500">Judul Draf</span>
             </div>
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Tajuk Pengarang: 7 Belum Valid</span>
-              <button
-                type="button"
-                onClick={() => showToast('Membuka pengesahan tajuk karantina')}
+              <span className="text-slate-400">DDC Belum Lengkap: {stats?.missing_ddc ?? 0}</span>
+              <Link
+                to="/admin/koleksi"
                 className="text-orange-600 font-bold hover:underline cursor-pointer"
               >
                 Proses Sekarang
-              </button>
+              </Link>
             </div>
           </div>
 
-          {/* Stat 4: Koleksi Digital / E-Resource */}
+          {/* Stat 4: Koleksi Digital / E-Resource / Member */}
           <div className="bg-white rounded-xl p-4.5 border border-slate-200/80 shadow-2xs space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-600">Koleksi Digital / E-Resource</span>
+              <span className="text-xs font-medium text-slate-600">Anggota Terdaftar</span>
               <span className="text-[10px] font-bold text-indigo-700 bg-[#EEF2FF] px-2 py-0.5 rounded-full">
-                OPAC Ready
+                Sirkulasi Hari Ini: {stats?.today_circulation ?? 0}
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-[32px] font-extrabold text-[#0B2256] tracking-tight leading-none">
-                1.250
+                {stats?.total_members !== undefined ? stats.total_members.toLocaleString('id-ID') : '0'}
               </span>
-              <span className="text-xs font-medium text-slate-500">E-Book/PDF</span>
+              <span className="text-xs font-medium text-slate-500">Pemustaka</span>
             </div>
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Unduhan Minggu Ini: 489&times;</span>
-              <button
-                type="button"
-                onClick={() => showToast('Membuka manajemen URL e-resource')}
+              <span className="text-slate-400">Digital / E-Book: {stats?.digital_count ?? 0}</span>
+              <Link
+                to="/form-data-diri"
                 className="text-blue-600 font-semibold hover:underline cursor-pointer"
               >
-                Kelola URL
-              </button>
+                Entri Anggota &rarr;
+              </Link>
             </div>
           </div>
         </div>
@@ -428,60 +438,31 @@ export default function Dashboard() {
 
               {/* DDC Bars Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5">
-                {/* Item 1: 200 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">200 - Buku Bahasa Indonesia</span>
-                    <span className="font-bold text-slate-900">35% <span className="font-normal text-slate-400 text-[11px]">(5.187)</span></span>
+                {ddcTop.length > 0 ? (
+                  ddcTop.map((item, idx) => (
+                    <div key={item.code || idx} className={`space-y-1.5 ${idx === 4 ? 'sm:col-span-2' : ''}`}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-800">{item.name}</span>
+                        <span className="font-bold text-slate-900">
+                          {item.percentage}% <span className="font-normal text-slate-400 text-[11px]">({item.count})</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.max(item.percentage, 2)}%`,
+                            backgroundColor: item.color || '#3B82F6',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="sm:col-span-2 py-4 text-center text-xs text-slate-400">
+                    Memuat data klasifikasi DDC dari database...
                   </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#3B82F6] transition-all duration-500" style={{ width: '35%' }} />
-                  </div>
-                </div>
-
-                {/* Item 2: 300 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">300 - Ilmu Sosial, Pendidikan, Adat</span>
-                    <span className="font-bold text-slate-900">22% <span className="font-normal text-slate-400 text-[11px]">(3.260)</span></span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#14B8A6] transition-all duration-500" style={{ width: '22%' }} />
-                  </div>
-                </div>
-
-                {/* Item 3: 800 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">800 - Sastra, Puisi, Novel, Bahasa</span>
-                    <span className="font-bold text-slate-900">16% <span className="font-normal text-slate-400 text-[11px]">(2.371)</span></span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#6366F1] transition-all duration-500" style={{ width: '16%' }} />
-                  </div>
-                </div>
-
-                {/* Item 4: 000 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">000 - Karya Umum, Komputer &amp; Info</span>
-                    <span className="font-bold text-slate-900">14% <span className="font-normal text-slate-400 text-[11px]">(2.075)</span></span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#A855F7] transition-all duration-500" style={{ width: '14%' }} />
-                  </div>
-                </div>
-
-                {/* Item 5: 500 & 600 (Span 2) */}
-                <div className="sm:col-span-2 space-y-1.5 pt-0.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">500 &amp; 600 - Sains Murni, Teknologi &amp; Terapan</span>
-                    <span className="font-bold text-slate-900">13% <span className="font-normal text-slate-400 text-[11px]">(1.927)</span></span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#F59E0B] transition-all duration-500" style={{ width: '13%' }} />
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* DDC Footer Note */}
@@ -525,61 +506,71 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
-                    {recentActivities.map((act) => (
-                      <tr key={act.id} className="hover:bg-slate-50/70 transition-colors">
-                        {/* Judul & Tanggung Jawab */}
-                        <td className="py-3 pr-3">
-                          <div className="font-bold text-slate-900 leading-snug">
-                            {act.title}
-                          </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            {act.subtitle}
-                          </div>
-                        </td>
+                    {recentActivities.length > 0 ? (
+                      recentActivities.map((act) => (
+                        <tr key={act.id} className="hover:bg-slate-50/70 transition-colors">
+                          {/* Judul & Tanggung Jawab */}
+                          <td className="py-3 pr-3">
+                            <div className="font-bold text-slate-900 leading-snug">
+                              {act.title}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {act.subtitle}
+                            </div>
+                          </td>
 
-                        {/* No. Klas */}
-                        <td className="py-3 px-2 text-center">
-                          <span className={`font-mono font-bold ${act.ddcColor}`}>
-                            {act.ddc}
-                          </span>
-                        </td>
+                          {/* No. Klas */}
+                          <td className="py-3 px-2 text-center">
+                            <span className={`font-mono font-bold ${act.ddcColor}`}>
+                              {act.ddc}
+                            </span>
+                          </td>
 
-                        {/* Penginput */}
-                        <td className="py-3 px-2 text-slate-700 whitespace-nowrap">
-                          {act.officer}
-                        </td>
+                          {/* Penginput */}
+                          <td className="py-3 px-2 text-slate-700 whitespace-nowrap">
+                            {act.officer}
+                          </td>
 
-                        {/* Waktu */}
-                        <td className="py-3 px-2 text-slate-500 whitespace-nowrap text-[11px]">
-                          {act.time}
-                        </td>
+                          {/* Waktu */}
+                          <td className="py-3 px-2 text-slate-500 whitespace-nowrap text-[11px]">
+                            {act.time}
+                          </td>
 
-                        {/* Status */}
-                        <td className="py-3 px-2 text-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${act.statusBadge}`}>
-                            {act.status}
-                          </span>
-                        </td>
+                          {/* Status */}
+                          <td className="py-3 px-2 text-center">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${act.statusBadge}`}>
+                              {act.status}
+                            </span>
+                          </td>
 
-                        {/* Aksi */}
-                        <td className="py-3 pl-2 text-right">
-                          <button
-                            type="button"
-                            onClick={() => navigate('/admin/entri-katalog')}
-                            className={`font-bold hover:underline cursor-pointer ${act.actionColor}`}
-                          >
-                            {act.actionText}
-                          </button>
+                          {/* Aksi */}
+                          <td className="py-3 pl-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/admin/entri-katalog?edit=${act.id}`)}
+                              className={`font-bold hover:underline cursor-pointer ${act.actionColor}`}
+                            >
+                              {act.actionText}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-6 text-center text-xs text-slate-400">
+                          {loading ? 'Memuat data entri katalog...' : 'Belum ada data katalog di database.'}
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
 
               {/* Table Footer */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Menampilkan 4 entri baru dari 14.820 judul</span>
+                <span>
+                  Menampilkan {recentActivities.length} entri terbaru dari {stats?.total_catalogs ?? 0} judul katalog
+                </span>
                 <Link to="/admin/entri-katalog" className="text-blue-600 font-semibold hover:underline">
                   Formulir MARC21 &rarr;
                 </Link>
@@ -614,12 +605,16 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-bold text-slate-800">
-                      Kondisi Baik &amp; Siap Rak
+                      {physicalStatus?.good?.label || 'Kondisi Baik & Siap Rak'}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-extrabold text-slate-900">88%</span>
-                    <span className="text-[10px] text-slate-500 block">37.532 Eks</span>
+                    <span className="text-xs font-extrabold text-slate-900">
+                      {physicalStatus?.good?.percentage ?? 100}%
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {physicalStatus?.good?.count ?? stats?.total_collections ?? 0} Eks
+                    </span>
                   </div>
                 </div>
 
@@ -628,12 +623,16 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                     <span className="text-xs font-bold text-slate-800">
-                      Rusak Ringan (Cover/Sobek)
+                      {physicalStatus?.damaged?.label || 'Rusak / Perlu Perbaikan'}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-extrabold text-slate-900">8%</span>
-                    <span className="text-[10px] text-slate-500 block">3.412 Eks</span>
+                    <span className="text-xs font-extrabold text-slate-900">
+                      {physicalStatus?.damaged?.percentage ?? 0}%
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {physicalStatus?.damaged?.count ?? 0} Eks
+                    </span>
                   </div>
                 </div>
 
@@ -642,12 +641,16 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                     <span className="text-xs font-bold text-slate-800">
-                      Proses Binding / Perbaikan
+                      {physicalStatus?.borrowed?.label || 'Sedang Dipinjam Pemustaka'}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-extrabold text-slate-900">3%</span>
-                    <span className="text-[10px] text-slate-500 block">1.280 Eks</span>
+                    <span className="text-xs font-extrabold text-slate-900">
+                      {physicalStatus?.borrowed?.percentage ?? 0}%
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {physicalStatus?.borrowed?.count ?? stats?.borrowed_collections ?? 0} Eks
+                    </span>
                   </div>
                 </div>
 
@@ -656,12 +659,16 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
                     <span className="text-xs font-bold text-slate-800">
-                      Hilang / Klaim Pemustaka
+                      {physicalStatus?.quarantine_or_lost?.label || 'Karantina / Hilang'}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-extrabold text-slate-900">1%</span>
-                    <span className="text-[10px] text-slate-500 block">426 Eks</span>
+                    <span className="text-xs font-extrabold text-slate-900">
+                      {physicalStatus?.quarantine_or_lost?.percentage ?? 0}%
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {physicalStatus?.quarantine_or_lost?.count ?? 0} Eks
+                    </span>
                   </div>
                 </div>
               </div>
@@ -693,23 +700,29 @@ export default function Dashboard() {
 
               {/* Ranking List */}
               <div className="space-y-3">
-                {topBooks.map((book) => (
-                  <div key={book.rank} className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-lg ${book.badgeClass} flex items-center justify-center font-bold text-xs shrink-0 mt-0.5`}>
-                      {book.rank}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-slate-800 leading-tight">
-                        {book.title}
+                {topBooks.length > 0 ? (
+                  topBooks.map((book) => (
+                    <div key={book.rank} className="flex items-start gap-3">
+                      <div className={`w-6 h-6 rounded-lg ${book.badgeClass} flex items-center justify-center font-bold text-xs shrink-0 mt-0.5`}>
+                        {book.rank}
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
-                        <span>{book.callNo}</span>
-                        <span>•</span>
-                        <span className="text-emerald-600 font-bold">{book.loans}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 leading-tight">
+                          {book.title}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span>{book.callNo}</span>
+                          <span>•</span>
+                          <span className="text-emerald-600 font-bold">{book.loans}</span>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="py-4 text-center text-xs text-slate-400">
+                    Belum ada data koleksi populer.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -730,21 +743,23 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-2 text-xs text-slate-700 max-h-[60vh] overflow-y-auto">
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>000 Komputer, Informasi &amp; Karya Umum</span><span className="font-bold">2.075</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>100 Filsafat &amp; Psikologi</span><span className="font-bold">642</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>200 Agama &amp; Teologi</span><span className="font-bold">5.187</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>300 Ilmu Sosial &amp; Hukum</span><span className="font-bold">3.260</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>400 Bahasa &amp; Linguistik</span><span className="font-bold">810</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>500 Sains &amp; Matematika</span><span className="font-bold">945</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>600 Teknologi &amp; Terapan</span><span className="font-bold">982</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>700 Kesenian &amp; Rekreasi</span><span className="font-bold">521</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>800 Kesusastraan</span><span className="font-bold">2.371</span></div>
-              <div className="p-2 rounded bg-slate-50 flex justify-between font-mono"><span>900 Sejarah &amp; Geografi</span><span className="font-bold">1.027</span></div>
+              {ddcAll.length > 0 ? (
+                ddcAll.map((d) => (
+                  <div key={d.code} className="p-2 rounded bg-slate-50 flex justify-between font-mono">
+                    <span>{d.name}</span>
+                    <span className="font-bold">
+                      {d.count} <span className="text-slate-400 font-normal">({d.percentage}%)</span>
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-slate-400">Memuat klasifikasi DDC...</div>
+              )}
             </div>
             <div className="pt-2 text-right">
               <button
                 onClick={() => setShowDdcModal(false)}
-                className="px-4 py-2 bg-[#0B2556] text-white text-xs font-bold rounded-lg"
+                className="px-4 py-2 bg-[#0B2556] text-white text-xs font-bold rounded-lg cursor-pointer"
               >
                 Tutup
               </button>
@@ -770,14 +785,23 @@ export default function Dashboard() {
               Mulai sesi verifikasi fisik rak dan penyesuaian status sirkulasi eksemplar koleksi DAPD Buleleng.
             </p>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-              <div className="flex justify-between"><span className="text-slate-500">Total Koleksi Terdaftar:</span><span className="font-bold text-slate-800">42.650 Eksemplar</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Terakhir Audit:</span><span className="font-medium text-slate-700">12 Agustus 2026</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Petugas Auditor:</span><span className="font-medium text-slate-700">Tim Sirkulasi DAPD</span></div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Koleksi Terdaftar:</span>
+                <span className="font-bold text-slate-800">{stats?.total_collections ?? 0} Eksemplar</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Terakhir Audit:</span>
+                <span className="font-medium text-slate-700">{physicalStatus?.last_audit || 'Hari Ini'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Petugas Auditor:</span>
+                <span className="font-medium text-slate-700">Tim Sirkulasi DAPD</span>
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowOpnameModal(false)}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg"
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer"
               >
                 Batal
               </button>
@@ -786,7 +810,7 @@ export default function Dashboard() {
                   setShowOpnameModal(false)
                   showToast('Sesi audit stock opname berhasil dimulai!')
                 }}
-                className="px-4 py-2 bg-[#0B2556] hover:bg-blue-900 text-white text-xs font-bold rounded-lg"
+                className="px-4 py-2 bg-[#0B2556] hover:bg-blue-900 text-white text-xs font-bold rounded-lg cursor-pointer"
               >
                 Mulai Audit Sekarang
               </button>

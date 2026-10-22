@@ -598,4 +598,134 @@ export async function importAdminCatalogExcel(file) {
   }
 }
 
+export async function fetchAdminDashboard() {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/dashboard`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mengambil data dashboard admin (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error fetchAdminDashboard:', error)
+    throw error
+  }
+}
+
+export async function scanAdminBarcode(code) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/dashboard/scan`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ code }),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Barcode ${code} tidak ditemukan.`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error scanAdminBarcode:', error)
+    throw error
+  }
+}
+
+export async function syncAdminDashboard() {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/dashboard/sync`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal melakukan sinkronisasi database.`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error syncAdminDashboard:', error)
+    throw error
+  }
+}
+
+export async function exportAdminReport(reportType = 'circulation', exportType = 'excel') {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/reports/${reportType}?export_type=${exportType}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Gagal mengunduh laporan (Status: ${response.status})`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    const ext = exportType === 'pdf' ? 'pdf' : 'xls'
+    a.download = `Laporan_${reportType}_${new Date().toISOString().slice(0, 10)}.${ext}`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(downloadUrl)
+
+    return true
+  } catch (error) {
+    console.error('API Error exportAdminReport:', error)
+    throw error
+  }
+}
+
+
 
