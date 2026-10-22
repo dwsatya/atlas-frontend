@@ -274,31 +274,22 @@ export default function LoginUser() {
                     </div>
                 </form>
 
-                {/* Link Daftar Anggota Baru */}
-                <div className="text-center text-xs sm:text-sm text-slate-700 pt-1">
-                    Belum menjadi anggota?{' '}
-                    <button
-                        type="button"
-                        onClick={() => navigate('/register')}
-                        className="font-bold text-[#032360] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
-                    >
-                        Daftar Anggota Baru
-                    </button>
+                {/* Separator / Atau: */}
+                <div className="text-center text-xs sm:text-sm font-semibold text-[#032360] -mt-1">
+                    Atau:
                 </div>
 
-                {/* Social Login dengan Google */}
-                <div className="flex items-center justify-center gap-3 pt-1 text-xs sm:text-sm font-bold text-[#032360]">
-                    <span>Atau masuk dengan:</span>
+                {/* Social Login dengan Google (Full Pill Button) */}
+                <div>
                     <button
                         type="button"
                         onClick={() => {
                             window.location.href = getGoogleLoginUrl()
                         }}
-                        className="w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md hover:shadow-lg hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer"
+                        className="w-full py-3 px-4 rounded-full border border-[#032360] bg-white hover:bg-slate-50 text-[#032360] font-bold text-sm sm:text-base shadow-xs hover:shadow-md transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-3 cursor-pointer"
                         aria-label="Masuk dengan Google"
-                        title="Masuk dengan Akun Google"
                     >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                             <path
                                 fill="#4285F4"
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -316,6 +307,19 @@ export default function LoginUser() {
                                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                             />
                         </svg>
+                        <span>Masuk dengan Google</span>
+                    </button>
+                </div>
+
+                {/* Link Daftar Anggota Baru */}
+                <div className="text-center text-xs sm:text-sm text-[#032360] pt-1">
+                    Belum menjadi anggota?{' '}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/register')}
+                        className="font-bold text-[#032360] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
+                    >
+                        Daftar Anggota Baru
                     </button>
                 </div>
             </div>
