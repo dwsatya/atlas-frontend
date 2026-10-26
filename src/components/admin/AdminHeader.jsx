@@ -98,12 +98,12 @@ export default function AdminHeader({ onToggleSidebar }) {
                 <button
                   onClick={() => {
                     setDropdownOpen(false)
-                    navigate('/profile')
+                    navigate('/admin/profile')
                   }}
                   className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Profil Akun</span>
+                  <span>Profil Akun Admin</span>
                 </button>
 
                 <div className="h-px bg-slate-100 my-1"></div>

@@ -27,7 +27,13 @@ function formatDateForInput(dateVal) {
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { user, logout, login, isAuthenticated } = useAuth()
+  const { user, logout, login, isAuthenticated, isAdmin } = useAuth()
+
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin/profile', { replace: true })
+    }
+  }, [isAdmin, navigate])
 
   const [profileData, setProfileData] = useState(user || null)
   const [loading, setLoading] = useState(false)
@@ -57,6 +63,7 @@ export default function Profile() {
   const [downloadingSide, setDownloadingSide] = useState(null)
 
   useEffect(() => {
+    if (isAdmin) return
     async function loadLatestProfile() {
       const token = localStorage.getItem('atlas_token')
       if (!token) return
@@ -255,6 +262,10 @@ export default function Profile() {
     } finally {
       setDownloadingSide(null)
     }
+  }
+
+  if (isAdmin) {
+    return null
   }
 
   return (

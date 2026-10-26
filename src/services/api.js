@@ -278,6 +278,108 @@ function getAdminToken() {
   return localStorage.getItem('atlas_admin_token') || localStorage.getItem('atlas_token') || ''
 }
 
+export async function fetchAdminProfile() {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/profile`
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal mengambil data profil admin (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error fetchAdminProfile:', error)
+    throw error
+  }
+}
+
+export async function updateAdminProfile(data) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/profile`
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui profil admin (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error updateAdminProfile:', error)
+    throw error
+  }
+}
+
+export async function updateAdminPassword(passwordData) {
+  const token = getAdminToken()
+  const url = `${API_BASE_URL}/v1/admin/profile/password`
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(passwordData),
+    })
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal mengubah password admin (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error updateAdminPassword:', error)
+    throw error
+  }
+}
+
 export async function createAdminCatalog(catalogData) {
   const token = getAdminToken()
   const url = `${API_BASE_URL}/v1/admin/books`

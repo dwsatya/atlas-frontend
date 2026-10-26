@@ -9,6 +9,7 @@ import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import AdminProfile from './pages/AdminProfile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
 import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import AdminKarantinaKoleksi from './pages/AdminKarantinaKoleksi'
@@ -177,6 +178,24 @@ export default function App() {
         element={
           <AdminRoute>
             <Dashboard />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Profile Routes */}
+      <Route
+        path="/admin/profile"
+        element={
+          <AdminRoute>
+            <AdminProfile />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/profil"
+        element={
+          <AdminRoute>
+            <AdminProfile />
           </AdminRoute>
         }
       />

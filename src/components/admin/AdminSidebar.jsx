@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   BarChart3,
   Settings,
+  User,
   X,
   ChevronRight,
 } from 'lucide-react'
@@ -120,11 +121,22 @@ export default function AdminSidebar({ isOpen, onClose }) {
           path: '/admin/pengaturan',
           icon: Settings,
         },
+        {
+          name: 'Profil Admin',
+          path: '/admin/profile',
+          icon: User,
+        },
       ],
     },
   ]
 
   const isActive = (itemPath) => {
+    if (itemPath === '/admin/profile') {
+      return (
+        currentPath === '/admin/profile' ||
+        currentPath === '/admin/profil'
+      )
+    }
     if (itemPath === '/admin/entri-katalog') {
       return (
         currentPath === '/admin/entri-katalog' ||
