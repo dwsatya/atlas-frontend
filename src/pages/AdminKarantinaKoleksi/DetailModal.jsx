@@ -90,6 +90,17 @@ export default function DetailModal({
               <span>Pengarang:</span>
               <strong className="text-slate-900">{item.author}</strong>
             </p>
+            {item.barcode_no && (
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200">
+                <span className="text-[11px] text-slate-500 font-semibold">Identitas Eksemplar:</span>
+                <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-mono text-xs font-bold">
+                  {item.barcode_no}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200">
+                  Kondisi: {item.physical_condition || 'Rusak'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Reason Box */}

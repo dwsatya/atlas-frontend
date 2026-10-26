@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { fetchProfile, updateProfile } from '../../services/api'
+import { fetchProfile, updateProfile, fetchMyProblemHistory } from '../../services/api'
 import logoatlas from '../../assets/logoatlas.png'
 import logo from '../../assets/Logo.png'
 import KtaCard, { KtaFront, KtaBack } from '../../components/KtaCard'
@@ -30,6 +30,8 @@ export default function Profile() {
   const { user, logout, login, isAuthenticated } = useAuth()
 
   const [profileData, setProfileData] = useState(user || null)
+  const [problemData, setProblemData] = useState(null)
+  const [showResolvedCases, setShowResolvedCases] = useState(false)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
@@ -68,6 +70,16 @@ export default function Profile() {
           setProfileData(res.data)
           // Update local auth state if different
           login(res.data, token)
+        }
+
+        // Ambil riwayat status sirkulasi dan kasus permasalahan jika ada
+        try {
+          const pRes = await fetchMyProblemHistory()
+          if (pRes) {
+            setProblemData(pRes)
+          }
+        } catch (pErr) {
+          console.warn('Could not load member problem status:', pErr)
         }
       } catch (err) {
         console.warn('Could not fetch server profile, using cached user:', err)
@@ -768,6 +780,200 @@ export default function Profile() {
                 </div>
               </div>
             </div>
+
+            {/* Riwayat Sirkulasi & Status Bebas Pustaka (Keranjang Bermasalah Integration) */}
+            {problemData && (
+              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${
+                        problemData?.summary?.is_restricted
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {problemData?.summary?.is_restricted ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="text-base font-extrabold text-[#032360]">
+                        {problemData?.summary?.is_restricted
+                          ? 'Catatan Sirkulasi & Status Hak Pinjam'
+                          : 'Status Keanggotaan & Bebas Pustaka'}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        {problemData?.summary?.is_restricted
+                          ? 'Perhatian: Terdapat tanggungan koleksi atau sanksi sirkulasi aktif pada akun Anda'
+                          : 'Status peminjaman aktif bebas pustaka (tidak ada denda/tunggakan sirkulasi)'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-extrabold ${
+                      problemData?.summary?.is_restricted
+                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    {problemData?.summary?.is_restricted
+                      ? `${problemData.summary.active_cases_count} Kasus Aktif`
+                      : 'Bebas Pustaka Aktif'}
+                  </span>
+                </div>
+
+                {/* Ringkasan Denda Jika Ada */}
+                {problemData?.summary?.total_fines > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[11px]">Total Tagihan Denda / Ganti Rugi</span>
+                      <span className="font-mono font-bold text-slate-800 text-sm">
+                        Rp {Number(problemData.summary.total_fines).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[11px]">Sudah Dibayar / Dicicil</span>
+                      <span className="font-mono font-bold text-emerald-700 text-sm">
+                        Rp {Number(problemData.summary.total_paid).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[11px]">Sisa Tanggungan</span>
+                      <span className="font-mono font-extrabold text-rose-700 text-sm">
+                        Rp {Number(problemData.summary.remaining_debt).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Kasus Aktif */}
+                {problemData?.summary?.active_cases_count > 0 ? (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Daftar Kasus Yang Memerlukan Tindak Lanjut:</span>
+                    </h4>
+                    <div className="space-y-2">
+                      {problemData.data
+                        ?.filter((c) => !c.is_resolved)
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="p-4 rounded-2xl bg-rose-50/50 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold">
+                                  {c.problem_type_label || c.problem_type}
+                                </span>
+                                <span className="font-bold text-slate-900">{c.item_title || '-'}</span>
+                              </div>
+                              <p className="text-slate-600 text-[11px]">
+                                {c.item_barcode && <span>Eksemplar: <b>{c.item_barcode}</b> • </span>}
+                                {c.reported_date && <span>Tanggal: {c.reported_date} • </span>}
+                                <span>Petugas Pemeriksa: {c.handled_by || '-'}</span>
+                              </p>
+                              {c.action_notes && (
+                                <p className="text-rose-800 font-medium text-[11px]">
+                                  Tindakan: {c.action_notes}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="sm:text-right shrink-0">
+                              <span className="inline-block px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[11px] border border-rose-200">
+                                {c.action_status_label || c.action_status}
+                              </span>
+                              {c.remaining_debt > 0 && (
+                                <p className="font-mono font-bold text-rose-700 text-xs mt-1">
+                                  Sisa: Rp {Number(c.remaining_debt).toLocaleString('id-ID')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 italic bg-amber-50 border border-amber-200 rounded-xl p-3">
+                      ℹ️ Untuk menyelesaikan tanggungan dan memulihkan hak peminjaman, silakan datang langsung ke loket Sirkulasi Gedung Dinas Arsip &amp; Perpustakaan Daerah Kabupaten Buleleng, Jl. Veteran No. 23 Singaraja.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-3">
+                    <span className="text-emerald-600 font-bold text-lg">✓</span>
+                    <div>
+                      <p className="font-bold">Akun Anda Dalam Kondisi Baik</p>
+                      <p className="text-[11px] text-emerald-800">
+                        Tidak ada denda tertunggak, buku terlambat, atau sanksi sirkulasi. Anda dapat melakukan peminjaman buku seperti biasa.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Kasus Selesai (Riwayat Masa Lalu) */}
+                {problemData?.summary?.resolved_cases_count > 0 && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowResolvedCases(!showResolvedCases)}
+                      className="text-xs font-bold text-[#002B66] hover:underline flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>
+                        {showResolvedCases
+                          ? 'Sembunyikan Riwayat Kasus Terdahulu'
+                          : `Lihat Riwayat Kasus Terdahulu Yang Telah Diselesaikan (${problemData.summary.resolved_cases_count})`}
+                      </span>
+                      <span>{showResolvedCases ? '▲' : '▼'}</span>
+                    </button>
+
+                    {showResolvedCases && (
+                      <div className="space-y-2 mt-3">
+                        {problemData.data
+                          ?.filter((c) => c.is_resolved)
+                          .map((c) => (
+                            <div
+                              key={c.id}
+                              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-bold">
+                                    {c.problem_type_label || c.problem_type}
+                                  </span>
+                                  <span className="font-semibold text-slate-800">{c.item_title}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                  Selesai pada: {c.resolved_at || '-'} • Catatan: {c.resolution_notes || 'Lunas/Selesai'}
+                                </p>
+                              </div>
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold self-start sm:self-auto">
+                                ✓ Selesai
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -12,6 +12,8 @@ import Profile from './pages/Profile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
 import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import AdminKarantinaKoleksi from './pages/AdminKarantinaKoleksi'
+import AdminEntriAnggota from './pages/AdminEntriAnggota'
+import AdminKeranjangBermasalah from './pages/AdminKeranjangBermasalah'
 import LoginAdmin from './pages/LoginAdmin'
 import Panduan from './pages/Panduan'
 
@@ -125,6 +127,58 @@ export default function App() {
         element={
           <AdminRoute>
             <AdminKarantinaKoleksi />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Entri & Kelola Anggota Routes */}
+      <Route
+        path="/admin/entri-anggota"
+        element={
+          <AdminRoute>
+            <AdminEntriAnggota />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/anggota"
+        element={
+          <AdminRoute>
+            <AdminEntriAnggota />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/entri-anggota"
+        element={
+          <AdminRoute>
+            <AdminEntriAnggota />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Keranjang Anggota Bermasalah Routes */}
+      <Route
+        path="/admin/keranjang-bermasalah"
+        element={
+          <AdminRoute>
+            <AdminKeranjangBermasalah />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/keranjang-anggota-bermasalah"
+        element={
+          <AdminRoute>
+            <AdminKeranjangBermasalah />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/keranjang-bermasalah"
+        element={
+          <AdminRoute>
+            <AdminKeranjangBermasalah />
           </AdminRoute>
         }
       />

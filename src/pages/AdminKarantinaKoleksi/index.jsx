@@ -38,35 +38,31 @@ import MergeModal from './MergeModal'
 import HelpModal from './HelpModal'
 import PublishOpacModal from './PublishOpacModal'
 import DeleteConfirmModal from './DeleteConfirmModal'
-import { INITIAL_QUARANTINE_BOOKS } from './initialData'
 import {
   fetchAdminQuarantine,
   restoreQuarantineCatalog,
   validateAndSaveCatalog,
   deleteAdminCatalog,
+  bulkRestoreQuarantineCatalogs,
+  bulkDeleteQuarantineCatalogs,
 } from '../../services/api'
 
 export default function AdminKarantinaKoleksi() {
-  // Master state collections
-  const [items, setItems] = useState(INITIAL_QUARANTINE_BOOKS)
+  // Master state collections (dari database riil, bukan mock)
+  const [items, setItems] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all') // 'all', 'duplikasi', 'data_belum_lengkap', 'dihapus_sementara'
 
-  // Filter builder states (matching the screenshot)
+  // Filter builder states
   const [combineLogic, setCombineLogic] = useState('dan') // 'dan' or 'atau'
   const [filterRows, setFilterRows] = useState([
     {
       id: 1,
       field: 'Judul Buku',
-      value: 'Metodologi Riset',
-    },
-    {
-      id: 2,
-      field: 'Alasan Karantina',
-      value: 'Belum Dilengkapi No Klasifikasi DDC',
+      value: '',
     },
   ])
 
-  // Active filter query applied to table (initially inactive so all 19 records are accessible, matching the 1-5 of 19 table view)
+  // Active filter query applied to table
   const [appliedFilters, setAppliedFilters] = useState({
     active: false,
     logic: 'dan',
@@ -77,9 +73,9 @@ export default function AdminKarantinaKoleksi() {
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkAction, setBulkAction] = useState('')
 
-  // Pagination & view layout (perPage 5 matches "Menampilkan 1 – 5 dari 19 rekaman katalog karantina")
+  // Pagination & view layout
   const [currentPage, setCurrentPage] = useState(1)
-  const [perPage, setPerPage] = useState(5)
+  const [perPage, setPerPage] = useState(10)
   const [viewMode, setViewMode] = useState('table') // 'table', 'grid', 'report'
 
   // Modals state
@@ -101,11 +97,11 @@ export default function AdminKarantinaKoleksi() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  // Load / Sync with backend API if available
+  // Load / Sync with backend API
   const loadQuarantineData = useCallback(async (showNotification = false) => {
     setLoading(true)
     try {
-      const res = await fetchAdminQuarantine({ per_page: 50 })
+      const res = await fetchAdminQuarantine({ per_page: 100 })
       const rawList = res?.data?.data || (Array.isArray(res?.data) ? res.data : [])
 
       if (rawList && rawList.length > 0) {
@@ -116,39 +112,34 @@ export default function AdminKarantinaKoleksi() {
             c.quarantine_reason?.toLowerCase().includes('duplikasi')
           )
           const isDeleted = Boolean(
-            c.quarantine_reason?.toLowerCase().includes('hapus')
+            c.quarantine_reason?.toLowerCase().includes('hapus') ||
+            c.quarantine_reason?.toLowerCase().includes('write-off')
           )
 
           let category = 'data_belum_lengkap'
-          let reason = 'Belum Dilengkapi No Klasifikasi DDC'
+          let reason = c.quarantine_reason || 'Belum Dilengkapi No Klasifikasi DDC'
           if (isDupe) {
             category = 'duplikasi'
-            reason = c.quarantine_reason || 'Duplikasi Terdeteksi'
           } else if (isDeleted) {
             category = 'dihapus_sementara'
-            reason = c.quarantine_reason || 'Dihapus Sementara oleh Petugas'
           } else if (!hasDdc) {
             category = 'data_belum_lengkap'
-            reason = 'Belum Dilengkapi No Klasifikasi DDC'
-          } else {
-            category = 'data_belum_lengkap'
-            reason = 'Tanpa Call Number / DDC'
           }
 
           return {
-            id: `db-${catId}`,
+            id: catId,
             db_id: catId,
             bibid: `BIB - ${String(catId).padStart(5, '0')}`,
             is_rda: Boolean(c.is_rda ?? true),
             title: c.title,
-            author: c.author_main || 'Pustakawan Buleleng',
+            author: c.author_main || 'Penulis Tidak Diketahui',
             edition: c.edition || 'Cet. 1',
-            publisher: `${c.publish_city || 'Buleleng'}: ${c.publisher || 'DAPD'}`,
+            publisher: `${c.publish_city || 'Buleleng'}: ${c.publisher || 'Perpustakaan'}`,
             publish_year: `Tahun ${c.publish_year || '2026'}`,
             physical_description: `${c.pages || 'xx, 200 hlm.'}; ${
               c.dimension || '21 cm'
             }`,
-            subject: c.subject_topic || 'Sejarah & Kebudayaan',
+            subject: c.subject_topic || 'Koleksi Umum',
             category,
             quarantine_reason: reason,
             isbn: c.isbn || '-',
@@ -158,37 +149,35 @@ export default function AdminKarantinaKoleksi() {
             copies_count: c.collections?.length || c.total_copies || 1,
             notes:
               c.abstract ||
+              reason ||
               'Dimasukkan ke keranjang karantina dari modul entri katalog/koleksi.',
+            barcode_no: c.barcode_no || null,
+            physical_condition: c.physical_condition || 'Rusak',
+            is_collection: Boolean(c.is_collection),
+            collection_id: c.collection_id || null,
+            catalog_id: c.catalog_id || null,
             priority: 'Prioritas 1',
             is_real_db: true,
           }
         })
 
-        // Merge: DB items on top, followed by mock reference items
-        const nonCollidingMock = INITIAL_QUARANTINE_BOOKS.filter(
-          (m) =>
-            !mappedFromDb.some(
-              (d) => d.title.toLowerCase() === m.title.toLowerCase()
-            )
-        )
-        const combined = [...mappedFromDb, ...nonCollidingMock]
-        setItems(combined)
+        setItems(mappedFromDb)
         if (showNotification) {
           showToast(
-            `${mappedFromDb.length} rekaman karantina dari database berhasil disinkronkan.`
+            `${mappedFromDb.length} rekaman karantina dari database berhasil dimuat.`
           )
         }
       } else {
-        // Fallback to initial data if database has no quarantine items
-        setItems(INITIAL_QUARANTINE_BOOKS)
+        setItems([])
         if (showNotification) {
-          showToast('Data karantina disinkronkan dengan repositori lokal.')
+          showToast('Tidak ada data koleksi di keranjang karantina.', 'info')
         }
       }
     } catch (err) {
       console.warn('Sync quarantine failed:', err)
+      setItems([])
       if (showNotification) {
-        showToast('Sinkronisasi menggunakan data lokal karantina.', 'info')
+        showToast('Gagal memuat data karantina dari server.', 'error')
       }
     } finally {
       setLoading(false)
@@ -344,7 +333,7 @@ export default function AdminKarantinaKoleksi() {
   }
 
   // Action Bar: Execute Bulk Action
-  const handleExecuteBulkAction = () => {
+  const handleExecuteBulkAction = async () => {
     if (selectedIds.length === 0) {
       showToast('Pilih minimal 1 rekaman katalog untuk diproses.', 'error')
       return
@@ -364,17 +353,20 @@ export default function AdminKarantinaKoleksi() {
         }
       }
       // Bulk restore
-      selectedIds.forEach((id) => {
-        const it = items.find((i) => i.id === id)
-        const catId = it?.db_id || (typeof it?.id === 'number' ? it.id : null)
-        if (catId) {
-          restoreQuarantineCatalog(catId, {}).catch(() => {})
-        }
-      })
-      setItems((prev) => prev.filter((i) => !selectedIds.includes(i.id)))
-      setSelectedIds([])
-      setBulkAction('')
-      showToast(`${selectedIds.length} katalog berhasil dipulihkan ke OPAC Publik!`)
+      try {
+        const targetCatIds = selectedIds.map((id) => {
+          const it = items.find((i) => i.id === id)
+          return it?.db_id || id
+        })
+        await bulkRestoreQuarantineCatalogs(targetCatIds)
+        setItems((prev) => prev.filter((i) => !selectedIds.includes(i.id)))
+        setSelectedIds([])
+        setBulkAction('')
+        showToast(`${targetCatIds.length} katalog berhasil dipulihkan ke OPAC Publik!`)
+        loadQuarantineData()
+      } catch (err) {
+        showToast('Gagal memulihkan massal: ' + (err.message || 'Error'), 'error')
+      }
     } else if (bulkAction === 'delete') {
       const selectedObjects = items.filter((i) => selectedIds.includes(i.id))
       setBulkItemsToDelete(selectedObjects)
@@ -407,7 +399,7 @@ export default function AdminKarantinaKoleksi() {
 
   const handleConfirmPublish = async ({ item, ddc, call_number, release_notes }) => {
     try {
-      const catId = item.db_id || (typeof item.id === 'number' ? item.id : null)
+      const catId = item.db_id || item.id
       if (catId) {
         await restoreQuarantineCatalog(catId, {
           ddc_number: ddc || item.ddc || '',
@@ -423,30 +415,33 @@ export default function AdminKarantinaKoleksi() {
       showToast(
         `Katalog "${item.title}" (${item.bibid}) berhasil diterbitkan ke OPAC Publik! Status eksemplar kini Aktif di Rak.`
       )
+      loadQuarantineData()
     } catch (err) {
       console.error('Publish to OPAC error:', err)
-      setItems((prev) => prev.filter((i) => i.id !== item.id))
-      setSelectedIds((prev) => prev.filter((id) => id !== item.id))
-      setSelectedItemForPublish(null)
-      showToast(`Katalog "${item.title}" berhasil dipulihkan ke OPAC.`)
+      showToast(`Gagal menerbitkan ke OPAC: ${err.message || 'Error server'}`, 'error')
     }
   }
 
   const handleSaveValidasi = async (updatedItem) => {
-    // Validating restores the item back to OPAC
-    const catId = updatedItem.db_id || (typeof updatedItem.id === 'number' ? updatedItem.id : null)
-    if (catId) {
-      await validateAndSaveCatalog(catId, {
-        ddc_number: updatedItem.ddc,
-        catalog_call_number: updatedItem.call_number,
-        abstract: updatedItem.notes,
-      }).catch(() => {})
+    try {
+      const catId = updatedItem.db_id || updatedItem.id
+      if (catId) {
+        await validateAndSaveCatalog(catId, {
+          ddc_number: updatedItem.ddc,
+          catalog_call_number: updatedItem.call_number,
+          abstract: updatedItem.notes,
+        })
+      }
+      setItems((prev) => prev.filter((i) => i.id !== updatedItem.id))
+      setSelectedItemForValidasi(null)
+      showToast(
+        `Katalog ${updatedItem.bibid} berhasil divalidasi dan diterbitkan ke OPAC!`
+      )
+      loadQuarantineData()
+    } catch (err) {
+      console.error('Validasi error:', err)
+      showToast(`Gagal memvalidasi katalog: ${err.message || 'Error server'}`, 'error')
     }
-    setItems((prev) => prev.filter((i) => i.id !== updatedItem.id))
-    setSelectedItemForValidasi(null)
-    showToast(
-      `Katalog ${updatedItem.bibid} berhasil divalidasi dan diterbitkan ke OPAC!`
-    )
   }
 
   const handleConfirmMerge = (item, targetBibid, transferExemplars) => {
@@ -466,22 +461,19 @@ export default function AdminKarantinaKoleksi() {
     setIsDeleting(true)
     const item = selectedItemForDelete
     try {
-      const catId = item.db_id || (typeof item.id === 'number' ? item.id : null)
+      const catId = item.db_id || item.id
       if (catId) {
-        await deleteAdminCatalog(catId).catch(() => {})
+        await deleteAdminCatalog(catId)
       }
       setItems((prev) => prev.filter((i) => i.id !== item.id))
       setSelectedIds((prev) => prev.filter((id) => id !== item.id))
       setSelectedItemForDelete(null)
       setSelectedItemForDetail(null)
       showToast(`Katalog "${item.title}" berhasil dihapus permanen dari sistem.`, 'info')
+      loadQuarantineData()
     } catch (err) {
       console.error('Delete catalog error:', err)
-      setItems((prev) => prev.filter((i) => i.id !== item.id))
-      setSelectedIds((prev) => prev.filter((id) => id !== item.id))
-      setSelectedItemForDelete(null)
-      setSelectedItemForDetail(null)
-      showToast(`Katalog "${item.title}" berhasil dihapus permanen dari sistem.`, 'info')
+      showToast(`Gagal menghapus katalog: ${err.message || 'Error server'}`, 'error')
     } finally {
       setIsDeleting(false)
     }
@@ -493,12 +485,8 @@ export default function AdminKarantinaKoleksi() {
     const itemsToDelete = bulkItemsToDelete
     const idsToDelete = itemsToDelete.map((i) => i.id)
     try {
-      for (const it of itemsToDelete) {
-        const catId = it.db_id || (typeof it.id === 'number' ? it.id : null)
-        if (catId) {
-          await deleteAdminCatalog(catId).catch(() => {})
-        }
-      }
+      const catIds = itemsToDelete.map((it) => it.db_id || it.id)
+      await bulkDeleteQuarantineCatalogs(catIds)
       setItems((prev) => prev.filter((i) => !idsToDelete.includes(i.id)))
       setSelectedIds([])
       setBulkAction('')
@@ -507,16 +495,10 @@ export default function AdminKarantinaKoleksi() {
         `${itemsToDelete.length} rekaman berhasil dihapus permanen dari sistem.`,
         'info'
       )
+      loadQuarantineData()
     } catch (err) {
       console.error('Bulk delete error:', err)
-      setItems((prev) => prev.filter((i) => !idsToDelete.includes(i.id)))
-      setSelectedIds([])
-      setBulkAction('')
-      setBulkItemsToDelete(null)
-      showToast(
-        `${itemsToDelete.length} rekaman berhasil dihapus permanen dari sistem.`,
-        'info'
-      )
+      showToast('Gagal menghapus massal: ' + (err.message || 'Error server'), 'error')
     } finally {
       setIsDeleting(false)
     }
@@ -947,6 +929,16 @@ export default function AdminKarantinaKoleksi() {
                               <User className="w-3 h-3 text-slate-400 shrink-0" />
                               <span className="truncate">{item.author}</span>
                             </div>
+                            {item.barcode_no && (
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-mono text-[10.5px] font-bold">
+                                  {item.barcode_no}
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10.5px] font-semibold border border-rose-200">
+                                  Kondisi: {item.physical_condition || 'Rusak'}
+                                </span>
+                              </div>
+                            )}
                           </td>
 
                           {/* Edisi */}

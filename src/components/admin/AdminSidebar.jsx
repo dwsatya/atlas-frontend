@@ -62,7 +62,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
       items: [
         {
           name: 'Entri Anggota',
-          path: '/form-data-diri',
+          path: '/admin/entri-anggota',
           icon: Users,
         },
         {
@@ -146,6 +146,20 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/admin/karantina-koleksi' ||
         currentPath === '/admin/karantina-katalog' ||
         currentPath === '/karantina-koleksi'
+      )
+    }
+    if (itemPath === '/admin/entri-anggota') {
+      return (
+        currentPath === '/admin/entri-anggota' ||
+        currentPath === '/admin/anggota' ||
+        currentPath === '/entri-anggota'
+      )
+    }
+    if (itemPath === '/admin/keranjang-bermasalah') {
+      return (
+        currentPath === '/admin/keranjang-bermasalah' ||
+        currentPath === '/admin/keranjang-anggota-bermasalah' ||
+        currentPath === '/keranjang-bermasalah'
       )
     }
     if (itemPath === '/dashboard') {

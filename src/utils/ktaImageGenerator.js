@@ -22,14 +22,17 @@ export function resolvePhotoUrl(photo) {
     cleaned = cleaned.replace('/profile-photos/', '/storage/profile-photos/')
   }
 
-  // 3. Jika sudah merupakan full URL (http:// atau https://)
+  // 3. Normalisasi localhost:8000 ke 127.0.0.1:8000 (hindari ECONNREFUSED IPv6 ::1 di Windows)
+  cleaned = cleaned.replace('http://localhost:8000', 'http://127.0.0.1:8000')
+
+  // 4. Jika sudah merupakan full URL (http:// atau https://)
   if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
     return cleaned
       .replace(/\/storage\/{2,}/g, '/storage/')
       .replace(/\/storage\/+storage\//g, '/storage/')
   }
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
   const pathWithoutSlash = cleaned.replace(/^\/+/, '')
   if (pathWithoutSlash.startsWith('storage/')) {
     return `${backendUrl}/${pathWithoutSlash}`
