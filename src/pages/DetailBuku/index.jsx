@@ -580,64 +580,123 @@ ER  - `
                     <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
-                    <span>Data Eksemplar</span>
+                    <span>Data Eksemplar Fisik</span>
                   </div>
-                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {book.available_copies ?? 1}/{book.total_copies ?? 1} Ada
+                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                    {book.available_copies ?? 0} dari {book.total_copies ?? (book.collections?.length || 1)} Tersedia
                   </span>
+                </div>
+
+                {/* Rekapitulasi Status Eksemplar */}
+                <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <span className="block text-[10px] text-slate-400 font-semibold uppercase">Total</span>
+                    <strong className="text-sm font-bold text-slate-800">{book.total_copies ?? (book.collections?.length || 1)}</strong>
+                  </div>
+                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/80">
+                    <span className="block text-[10px] text-emerald-600 font-semibold uppercase">Tersedia</span>
+                    <strong className="text-sm font-bold text-emerald-700">{book.available_copies ?? 0}</strong>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80">
+                    <span className="block text-[10px] text-amber-600 font-semibold uppercase">Dipinjam</span>
+                    <strong className="text-sm font-bold text-amber-700">{book.borrowed_copies ?? 0}</strong>
+                  </div>
+                  <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/80">
+                    <span className="block text-[10px] text-rose-600 font-semibold uppercase">Karantina</span>
+                    <strong className="text-sm font-bold text-rose-700">{book.quarantined_copies ?? 0}</strong>
+                  </div>
                 </div>
 
                 {/* List Collections / Eksemplar */}
                 {book.collections && book.collections.length > 0 ? (
                   <div className="space-y-3">
-                    {book.collections.map((coll, idx) => (
-                      <div
-                        key={coll.id || idx}
-                        className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2 text-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-[#002B66]">
-                            BARCODE : {coll.barcode_no || `B-${String(book.id * 100 + idx + 1).padStart(5, '0')}`}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                              coll.availability_status === 'AVAILABLE' || !coll.availability_status
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-rose-100 text-rose-800'
-                            }`}
-                          >
-                            {coll.availability_status === 'AVAILABLE' || !coll.availability_status
-                              ? 'Tersedia'
-                              : 'Dipinjam'}
-                          </span>
-                        </div>
+                    {book.collections.map((coll, idx) => {
+                      const isQuarantined = Boolean(coll.is_quarantine || coll.availability_status === 'QUARANTINED')
+                      const isBorrowed = coll.availability_status === 'BORROWED'
+                      const isMaintenance = coll.availability_status === 'MAINTENANCE'
+                      const condition = coll.physical_condition || 'Baik'
+                      const isDamaged = ['rusak', 'rusak ringan', 'rusak berat', 'hilang'].includes(condition.toLowerCase())
 
-                        <div className="grid grid-cols-2 gap-y-1 text-[11px] text-slate-600 pt-1 border-t border-slate-200/60">
-                          <div>
-                            <span className="text-slate-400">No. Induk:</span>{' '}
-                            <span className="font-semibold text-slate-800">
-                              {coll.item_number || `ATL-${book.publish_year || '2024'}/${String(coll.id || idx + 1).padStart(4, '0')}`}
+                      let statusBadge = {
+                        text: 'Tersedia',
+                        cls: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                      }
+                      if (isQuarantined) {
+                        statusBadge = {
+                          text: 'Dalam Karantina',
+                          cls: 'bg-rose-100 text-rose-800 border-rose-300',
+                        }
+                      } else if (isBorrowed) {
+                        statusBadge = {
+                          text: 'Sedang Dipinjam',
+                          cls: 'bg-amber-100 text-amber-800 border-amber-300',
+                        }
+                      } else if (isMaintenance) {
+                        statusBadge = {
+                          text: 'Proses Binding',
+                          cls: 'bg-purple-100 text-purple-800 border-purple-300',
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={coll.id || idx}
+                          className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2 text-xs"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-[#002B66]">
+                              BARCODE : {coll.barcode_no || `B-${String(book.id * 100 + idx + 1).padStart(5, '0')}`}
                             </span>
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
+                                  isDamaged ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                }`}
+                              >
+                                {condition}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${statusBadge.cls}`}>
+                                {statusBadge.text}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-slate-400">Pola:</span>{' '}
-                            <span className="font-semibold text-slate-800">
-                              {coll.category || 'Sirkulasi Santri'}
-                            </span>
+
+                          <div className="grid grid-cols-2 gap-y-1 text-[11px] text-slate-600 pt-1 border-t border-slate-200/60">
+                            <div>
+                              <span className="text-slate-400">No. Induk:</span>{' '}
+                              <span className="font-semibold text-slate-800">
+                                {coll.item_number || `ATL-${book.publish_year || '2024'}/${String(coll.id || idx + 1).padStart(4, '0')}`}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Kondisi Fisik:</span>{' '}
+                              <span className={`font-semibold ${isDamaged ? 'text-rose-600' : 'text-slate-800'}`}>
+                                {condition}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Ruang:</span>{' '}
+                              <span className="font-semibold text-slate-800">
+                                {coll.room_location_code || 'Lt. 1 Ruang Baca'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Call Number:</span>{' '}
+                              <span className="font-semibold text-slate-800 font-mono">
+                                {coll.exemplar_call_number || book.catalog_call_number || '-'}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="text-slate-400">Ruang:</span>{' '}
-                            <span className="font-semibold text-slate-800">
-                              {coll.room_location_code || 'Lt. 1 Ruang Baca'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400">Durasi:</span>{' '}
-                            <span className="font-semibold text-slate-800">Maks. 7 Hari</span>
-                          </div>
+
+                          {isQuarantined && coll.quarantine_reason && (
+                            <div className="pt-1 border-t border-rose-100 text-[10.5px] text-rose-700 flex items-center gap-1">
+                              <span className="font-semibold">Alasan Karantina:</span>
+                              <span className="italic">{coll.quarantine_reason}</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2 text-xs">
@@ -645,7 +704,7 @@ ER  - `
                       <span className="font-bold text-[#002B66]">
                         BARCODE : B-{String(book.id * 100 + 491).padStart(5, '0')}
                       </span>
-                      <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold text-[10px]">
+                      <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold text-[10px] border border-emerald-200">
                         Tersedia
                       </span>
                     </div>
@@ -658,8 +717,8 @@ ER  - `
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400">Pola:</span>{' '}
-                        <span className="font-semibold text-slate-800">Sirkulasi Santri</span>
+                        <span className="text-slate-400">Kondisi Fisik:</span>{' '}
+                        <span className="font-semibold text-slate-800">Baik</span>
                       </div>
                       <div>
                         <span className="text-slate-400">Ruang:</span>{' '}

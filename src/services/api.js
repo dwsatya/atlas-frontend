@@ -1,5 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
 
 export async function fetchBooks({ search = '', page = 1 } = {}) {
   const params = new URLSearchParams()
@@ -575,6 +575,178 @@ export async function deleteAdminCollection(collectionId) {
   }
 }
 
+export async function fetchAdminQuarantine({ search = '', category = 'all', page = 1, per_page = 15 } = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (category && category !== 'all') params.append('category', category)
+  if (page) params.append('page', page)
+  if (per_page) params.append('per_page', per_page)
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine?${params.toString()}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal mengambil data karantina (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error('API Error fetchAdminQuarantine:', error)
+    throw error
+  }
+}
+
+export async function moveToQuarantine(data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine/move`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal memindahkan ke karantina (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error('API Error moveToQuarantine:', error)
+    throw error
+  }
+}
+
+export async function restoreQuarantineCatalog(id, data = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine/${id}/restore`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal memulihkan katalog ke OPAC (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error(`API Error restoreQuarantineCatalog (${id}):`, error)
+    throw error
+  }
+}
+
+export async function validateAndSaveCatalog(id, data = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine/${id}/validate`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal validasi katalog (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error(`API Error validateAndSaveCatalog (${id}):`, error)
+    throw error
+  }
+}
+
+export async function bulkRestoreQuarantineCatalogs(ids) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine/bulk-restore`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ ids }),
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal memulihkan massal katalog (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error('API Error bulkRestoreQuarantineCatalogs:', error)
+    throw error
+  }
+}
+
+export async function bulkDeleteQuarantineCatalogs(ids) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/quarantine/bulk-delete`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ ids }),
+    })
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal menghapus massal katalog (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.error('API Error bulkDeleteQuarantineCatalogs:', error)
+    throw error
+  }
+}
+
 export async function importAdminCatalogExcel(file) {
   const token = getAdminToken()
   const url = `${API_BASE_URL}/v1/admin/books/import`
@@ -769,20 +941,30 @@ export async function ensureAdminToken() {
   return token
 }
 
-export async function fetchAdminQuarantine({
+/**
+ * =========================================================================
+ * ADMIN MEMBER MANAGEMENT (ENTRI & KELOLA ANGGOTA)
+ * =========================================================================
+ */
+
+export async function fetchAdminMembers({
   search = '',
+  job_category = '',
   status = '',
   page = 1,
-  per_page = 50,
+  per_page = 5,
 } = {}) {
-  let token = await ensureAdminToken()
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
   const params = new URLSearchParams()
-  params.append('is_quarantine', '1')
   if (search) params.append('search', search)
+  if (job_category && job_category !== 'all') params.append('job_category', job_category)
+  if (status && status !== 'all') params.append('status', status)
   if (page) params.append('page', page)
   if (per_page) params.append('per_page', per_page)
 
-  const url = `${API_BASE_URL}/v1/admin/books?${params.toString()}`
+  const url = `${API_BASE_URL}/v1/admin/members?${params.toString()}`
 
   try {
     let response = await fetch(url, {
@@ -794,8 +976,6 @@ export async function fetchAdminQuarantine({
     })
 
     if (response.status === 401) {
-      localStorage.removeItem('atlas_token')
-      localStorage.removeItem('atlas_admin_token')
       token = await ensureAdminToken()
       response = await fetch(url, {
         method: 'GET',
@@ -806,91 +986,789 @@ export async function fetchAdminQuarantine({
       })
     }
 
+    const result = await response.json().catch(() => null)
+
     if (!response.ok) {
-      throw new Error(`Gagal mengambil data karantina (Status: ${response.status})`)
+      const errorMessage =
+        result?.message || `Gagal mengambil data anggota (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
     }
 
-    const result = await response.json()
     return result
   } catch (error) {
-    console.warn('API fetchAdminQuarantine failed, using local quarantine state:', error)
+    console.error('API Error fetchAdminMembers:', error)
+    throw error
+  }
+}
+
+export async function fetchAdminNextMemberNo() {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/next-number`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+    const result = await response.json().catch(() => null)
+    return result?.member_no || 'ATL-2026-00194'
+  } catch (error) {
+    console.warn('API Error fetchAdminNextMemberNo, falling back:', error)
+    return 'ATL-2026-00194'
+  }
+}
+
+export async function createAdminMember(data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members`
+
+  let body
+  const headers = {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  if (data instanceof FormData) {
+    body = data
+  } else {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(data)
+  }
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      headers['Authorization'] = `Bearer ${token}`
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body,
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal menyimpan anggota (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error createAdminMember:', error)
+    throw error
+  }
+}
+
+export async function updateAdminMember(id, data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/${id}`
+
+  let body
+  const headers = {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  if (data instanceof FormData) {
+    data.append('_method', 'PUT')
+    body = data
+  } else {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(data)
+  }
+
+  try {
+    let response = await fetch(url, {
+      method: data instanceof FormData ? 'POST' : 'PUT',
+      headers,
+      body,
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      headers['Authorization'] = `Bearer ${token}`
+      response = await fetch(url, {
+        method: data instanceof FormData ? 'POST' : 'PUT',
+        headers,
+        body,
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal memperbarui anggota (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error updateAdminMember (${id}):`, error)
+    throw error
+  }
+}
+
+export async function deleteAdminMember(id) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/${id}`
+
+  try {
+    let response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menghapus anggota (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error deleteAdminMember (${id}):`, error)
+    throw error
+  }
+}
+
+export async function bulkDeleteAdminMembers(ids) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/bulk-delete`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ ids }),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ ids }),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menghapus massal anggota (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error bulkDeleteAdminMembers:', error)
+    throw error
+  }
+}
+
+export async function exportAdminMembers() {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/export`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Gagal mengekspor data anggota (Status: ${response.status})`)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = `Data_Anggota_DAPD_Buleleng_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(downloadUrl)
+
+    return true
+  } catch (error) {
+    console.error('API Error exportAdminMembers:', error)
+    throw error
+  }
+}
+
+/**
+ * =========================================================================
+ * KERANJANG ANGGOTA BERMASALAH (PROBLEM MEMBER CARTS)
+ * =========================================================================
+ */
+
+export async function fetchProblemCarts({
+  search = '',
+  problem_type = '',
+  job_category = '',
+  status = '',
+  page = 1,
+  per_page = 10,
+} = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  if (problem_type && problem_type !== 'all' && problem_type !== 'ALL') {
+    params.append('problem_type', problem_type)
+  }
+  if (job_category && job_category !== 'all' && job_category !== 'ALL') {
+    params.append('job_category', job_category)
+  }
+  if (status && status !== 'all' && status !== 'ALL') {
+    params.append('status', status)
+  }
+  if (page) params.append('page', page)
+  if (per_page) params.append('per_page', per_page)
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts?${params.toString()}`
+
+  try {
+    let response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mengambil data keranjang bermasalah (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error fetchProblemCarts:', error)
+    throw error
+  }
+}
+
+export async function fetchProblemCartById(id) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/${id}`
+
+  try {
+    let response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal mengambil detail kasus (Status: ${response.status})`)
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error fetchProblemCartById (${id}):`, error)
+    throw error
+  }
+}
+
+export async function createProblemCart(data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message ||
+        (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+        `Gagal mencatat kasus anggota bermasalah (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error createProblemCart:', error)
+    throw error
+  }
+}
+
+export async function updateProblemCart(id, data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/${id}`
+
+  try {
+    let response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal memperbarui kasus (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error updateProblemCart (${id}):`, error)
+    throw error
+  }
+}
+
+export async function addProblemFollowup(id, data) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/${id}/followup`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal mencatat tindak lanjut (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error addProblemFollowup (${id}):`, error)
+    throw error
+  }
+}
+
+export async function resolveProblemCart(id, data = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/${id}/resolve`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menyelesaikan kasus (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error resolveProblemCart (${id}):`, error)
+    throw error
+  }
+}
+
+export async function deleteProblemCart(id) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/${id}`
+
+  try {
+    let response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menghapus kasus (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error deleteProblemCart (${id}):`, error)
+    throw error
+  }
+}
+
+export async function bulkActionProblemCarts(action, ids) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/bulk-action`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ action, ids }),
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ action, ids }),
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal menjalankan tindakan massal (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error bulkActionProblemCarts:', error)
+    throw error
+  }
+}
+
+export async function syncCirculationProblemCarts() {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/problem-carts/sync-circulation`
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const errorMessage =
+        result?.message || `Gagal sinkronisasi data sirkulasi (Status: ${response.status})`
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.data = result
+      throw error
+    }
+
+    return result
+  } catch (error) {
+    console.error('API Error syncCirculationProblemCarts:', error)
+    throw error
+  }
+}
+
+export async function fetchMemberProblemHistory(memberId) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/members/${memberId}/problem-history`
+
+  try {
+    let response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    if (response.status === 401) {
+      token = await ensureAdminToken()
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+    }
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        result?.message || `Gagal mengambil riwayat kasus anggota (Status: ${response.status})`
+      )
+    }
+
+    return result
+  } catch (error) {
+    console.error(`API Error fetchMemberProblemHistory (${memberId}):`, error)
+    throw error
+  }
+}
+
+export async function fetchMyProblemHistory() {
+  const token = localStorage.getItem('atlas_token')
+  const url = `${API_BASE_URL}/v1/profile/problem-history`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(result?.message || `Gagal mengambil riwayat status keanggotaan (Status: ${response.status})`)
+    }
+    return result
+  } catch (error) {
+    console.warn('Could not fetch user problem history:', error)
     return null
   }
 }
-
-export async function restoreQuarantineCatalog(id, extraData = {}) {
-  let token = getAdminToken()
-  if (!token) token = await ensureAdminToken()
-  const url = `${API_BASE_URL}/v1/admin/books/${id}`
-
-  try {
-    let response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ is_quarantine: false, ...extraData }),
-    })
-
-    if (response.status === 401) {
-      token = await ensureAdminToken()
-      response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ is_quarantine: false, ...extraData }),
-      })
-    }
-
-    const result = await response.json().catch(() => null)
-    return result
-  } catch (error) {
-    console.error(`API Error restoreQuarantineCatalog (${id}):`, error)
-    throw error
-  }
-}
-
-export async function validateAndSaveCatalog(id, catalogData) {
-  let token = getAdminToken()
-  if (!token) token = await ensureAdminToken()
-  const url = `${API_BASE_URL}/v1/admin/books/${id}`
-
-  try {
-    let response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ ...catalogData, is_quarantine: false }),
-    })
-
-    if (response.status === 401) {
-      token = await ensureAdminToken()
-      response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ ...catalogData, is_quarantine: false }),
-      })
-    }
-
-    const result = await response.json().catch(() => null)
-    return result
-  } catch (error) {
-    console.error(`API Error validateAndSaveCatalog (${id}):`, error)
-    throw error
-  }
-}
-
 
 

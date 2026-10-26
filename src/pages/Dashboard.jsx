@@ -12,6 +12,7 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ExternalLink,
   ChevronRight,
   Search,
@@ -723,6 +724,76 @@ export default function Dashboard() {
                     Belum ada data koleksi populer.
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Card E: PENGAWASAN SIRKULASI & KERANJANG ANGGOTA BERMASALAH */}
+            <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xs font-bold tracking-wider text-[#0B2256] uppercase">
+                      ANGGOTA BERMASALAH
+                    </h2>
+                    <p className="text-[10px] text-slate-400">Kasus sirkulasi & sanksi</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                  {stats?.problem_cases ?? 28} Kasus
+                </span>
+              </div>
+
+              {/* Unique Member vs Total Cases */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-400 block uppercase">Anggota Unik Terkait</span>
+                  <span className="text-sm font-extrabold text-[#0B2256]">
+                    {stats?.unique_problem_members ?? 25} Pemustaka
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-semibold text-slate-400 block uppercase">Kasus Aktif</span>
+                  <span className="text-sm font-extrabold text-rose-600">
+                    {stats?.active_problem_cases ?? stats?.problem_cases ?? 28} Perlu Tindakan
+                  </span>
+                </div>
+              </div>
+
+              {/* Category Breakdown */}
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2 rounded-lg bg-indigo-50/60 border border-indigo-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Umum & ASN</span>
+                  <span className="font-extrabold text-[#0B2256] text-xs">
+                    {stats?.problem_by_category?.umum ?? 7}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Pelajar</span>
+                  <span className="font-extrabold text-blue-700 text-xs">
+                    {stats?.problem_by_category?.pelajar ?? 12}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Mahasiswa</span>
+                  <span className="font-extrabold text-emerald-700 text-xs">
+                    {stats?.problem_by_category?.mahasiswa ?? 9}
+                  </span>
+                </div>
+              </div>
+
+              {/* Navigation button */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/keranjang-bermasalah')}
+                  className="w-full py-2.5 px-4 bg-[#0B2256] hover:bg-[#071739] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition cursor-pointer active:scale-95"
+                >
+                  <span>Buka Keranjang Bermasalah</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>

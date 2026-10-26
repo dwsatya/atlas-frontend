@@ -29,7 +29,7 @@ import {
   Archive,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { fetchAdminCollections, updateAdminCatalog } from '../../services/api'
+import { fetchAdminCollections, updateAdminCatalog, moveToQuarantine } from '../../services/api'
 import KarantinaActionModal from './KarantinaActionModal'
 
 export default function AdminDaftarKoleksi() {
@@ -143,6 +143,7 @@ export default function AdminDaftarKoleksi() {
             status_subtext: statusSubtext,
             status_type: statusType,
             material_type: cat.material_type || 'Monograf (Buku)',
+            physical_condition: c.physical_condition || 'Baik',
             room_location: c.room_location_code || 'Lantai 1 - Rak Monograf A',
           }
         })
@@ -256,50 +257,31 @@ export default function AdminDaftarKoleksi() {
     try {
       const targetIds = targetItems.map((t) => t.id)
 
-      // Update local items state immediately
-      setItems((prev) =>
-        prev.map((item) =>
-          targetIds.includes(item.id)
-            ? {
-                ...item,
-                status: 'Karantina',
-                status_type: 'quarantine',
-                status_subtext: reason,
-              }
-            : item
-        )
-      )
+      // Kirim perintah karantina ke backend (hanya untuk eksemplar terpilih)
+      await moveToQuarantine({
+        collection_ids: targetItems.map((t) => t.collection_id || t.id),
+        reason,
+        category,
+        priority,
+        notes,
+      })
 
-      // Update database for catalogs
-      for (const it of targetItems) {
-        const catId = it.catalog_id || it.id
-        if (catId) {
-          await updateAdminCatalog(catId, {
-            is_quarantine: true,
-            quarantine_reason: notes ? `${reason} — ${notes}` : reason,
-            abstract: notes || it.notes || '',
-          }).catch((e) => console.warn('Quarantine catalog update error:', e))
-        }
-      }
-
-      // Update metrics
-      setMetrics((prev) => ({
-        ...prev,
-        quarantine_count: (prev.quarantine_count || 0) + targetItems.length,
-        available_count: Math.max(0, (prev.available_count || 0) - targetItems.length),
-      }))
-
-      setIsQuarantineModalOpen(false)
-      setItemsToQuarantine([])
+      // Hilang bukunya dari Daftar Koleksi Aktif
+      setItems((prev) => prev.filter((item) => !targetIds.includes(item.id)))
       setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)))
       setBulkAction('')
+      setIsQuarantineModalOpen(false)
+      setItemsToQuarantine([])
 
       showToast(
-        `${targetItems.length} koleksi berhasil dipindahkan ke Keranjang Karantina! Alasan: ${reason}`
+        `${targetItems.length} koleksi berhasil dipindahkan ke Keranjang Karantina!`
       )
+
+      // Refresh data dari server agar sinkron total dan metrics
+      loadCollections()
     } catch (err) {
       console.error('Failed to quarantine items:', err)
-      showToast('Gagal memproses karantina koleksi.', 'error')
+      showToast('Gagal memproses karantina koleksi: ' + (err.message || 'Error server'), 'error')
     }
   }
 
@@ -897,56 +879,69 @@ export default function AdminDaftarKoleksi() {
 
                         {/* Status */}
                         <td className="py-3 px-2 align-top">
-                          {item.status_type === 'available' && (
-                            <div>
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] font-bold text-[11px] border border-[#A7F3D0]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                <span>Tersedia di Rak</span>
-                              </span>
-                            </div>
-                          )}
+                          <div className="space-y-1">
+                            {item.status_type === 'available' && (
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] font-bold text-[11px] border border-[#A7F3D0]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                  <span>Tersedia di Rak</span>
+                                </span>
+                              </div>
+                            )}
 
-                          {item.status_type === 'borrowed' && (
-                            <div>
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EDE9FE] text-[#6D28D9] font-bold text-[11px] border border-[#DDD6FE]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                                <span>Sedang Dipinjam</span>
-                              </span>
-                              {item.status_subtext && (
-                                <p className="text-[10px] text-slate-500 mt-1">
-                                  {item.status_subtext}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                            {item.status_type === 'borrowed' && (
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EDE9FE] text-[#6D28D9] font-bold text-[11px] border border-[#DDD6FE]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                  <span>Sedang Dipinjam</span>
+                                </span>
+                                {item.status_subtext && (
+                                  <p className="text-[10px] text-slate-500 mt-1">
+                                    {item.status_subtext}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
-                          {item.status_type === 'maintenance' && (
-                            <div>
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFEDD5] text-[#C2410C] font-bold text-[11px] border border-[#FED7AA]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
-                                <span>Proses Binding</span>
-                              </span>
-                              {item.status_subtext && (
-                                <p className="text-[10px] text-slate-500 mt-1">
-                                  {item.status_subtext}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                            {item.status_type === 'maintenance' && (
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFEDD5] text-[#C2410C] font-bold text-[11px] border border-[#FED7AA]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                                  <span>Proses Binding</span>
+                                </span>
+                                {item.status_subtext && (
+                                  <p className="text-[10px] text-slate-500 mt-1">
+                                    {item.status_subtext}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
-                          {item.status_type === 'quarantine' && (
-                            <div>
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#DBEAFE] text-[#1E40AF] font-bold text-[11px] border border-[#BFDBFE]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                                <span>Karantina</span>
+                            {item.status_type === 'quarantine' && (
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#DBEAFE] text-[#1E40AF] font-bold text-[11px] border border-[#BFDBFE]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                  <span>Karantina</span>
+                                </span>
+                                {item.status_subtext && (
+                                  <p className="text-[10px] text-slate-500 mt-1">
+                                    {item.status_subtext}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Kondisi Fisik Eksemplar */}
+                            <div className="pt-0.5">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                ['rusak', 'rusak ringan', 'rusak berat', 'hilang'].includes((item.physical_condition || '').toLowerCase())
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}>
+                                Kondisi: {item.physical_condition || 'Baik'}
                               </span>
-                              {item.status_subtext && (
-                                <p className="text-[10px] text-slate-500 mt-1">
-                                  {item.status_subtext}
-                                </p>
-                              )}
                             </div>
-                          )}
+                          </div>
                         </td>
 
                         {/* Aksi Cepat */}
