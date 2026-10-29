@@ -174,6 +174,27 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/keranjang-bermasalah'
       )
     }
+    if (itemPath === '/admin/sirkulasi/peminjaman') {
+      return (
+        currentPath === '/admin/sirkulasi/peminjaman' ||
+        currentPath === '/admin/peminjaman'
+      )
+    }
+    if (itemPath === '/admin/sirkulasi/pengembalian') {
+      return (
+        currentPath === '/admin/sirkulasi/pengembalian' ||
+        currentPath === '/admin/pengembalian'
+      )
+    }
+    if (itemPath === '/admin/sirkulasi/daftar') {
+      return (
+        currentPath === '/admin/sirkulasi/daftar' ||
+        currentPath === '/admin/daftar-peminjaman'
+      )
+    }
+    if (itemPath === '/admin/loker') {
+      return currentPath === '/admin/loker' || currentPath === '/admin/peminjaman-loker'
+    }
     if (itemPath === '/dashboard') {
       return (
         currentPath === '/dashboard' ||

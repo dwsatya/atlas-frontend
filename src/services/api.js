@@ -1874,3 +1874,210 @@ export async function fetchMyProblemHistory() {
 }
 
 
+
+/**
+ * =========================================================================
+ * ADMIN SIRKULASI: PEMINJAMAN BUKU (LOKET)
+ * =========================================================================
+ */
+
+async function adminCirculationRequest(path, { method = 'GET', body } = {}, fallbackMessage, basePath = '/circulation') {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin${basePath}${path}`
+  const send = (authToken) =>
+    fetch(url, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    })
+
+  let response = await send(token)
+  if (response.status === 401) {
+    token = await ensureAdminToken()
+    response = await send(token)
+  }
+
+  const result = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const errorMessage =
+      result?.message ||
+      (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+      `${fallbackMessage} (Status: ${response.status})`
+    const error = new Error(errorMessage)
+    error.status = response.status
+    error.data = result
+    throw error
+  }
+
+  return result
+}
+
+export function fetchBorrowMember(code) {
+  return adminCirculationRequest(
+    `/borrow/member?code=${encodeURIComponent(code)}`,
+    {},
+    'Gagal mengambil data anggota'
+  )
+}
+
+export function fetchBorrowCollection(barcode) {
+  return adminCirculationRequest(
+    `/borrow/collection?barcode=${encodeURIComponent(barcode)}`,
+    {},
+    'Gagal memvalidasi eksemplar buku'
+  )
+}
+
+export function searchBorrowCollections(keyword) {
+  return adminCirculationRequest(
+    `/borrow/collections/search?q=${encodeURIComponent(keyword)}`,
+    {},
+    'Gagal mencari judul buku'
+  )
+}
+
+export function createBorrowTransaction({ member_no, barcodes, duration_days }) {
+  return adminCirculationRequest(
+    '/borrow',
+    { method: 'POST', body: { member_no, barcodes, duration_days } },
+    'Gagal menyimpan transaksi peminjaman'
+  )
+}
+
+/**
+ * =========================================================================
+ * ADMIN SIRKULASI: PENGEMBALIAN BUKU (LOKET)
+ * =========================================================================
+ */
+
+export function fetchReturnLookup(code) {
+  return adminCirculationRequest(
+    `/return/lookup?code=${encodeURIComponent(code)}`,
+    {},
+    'Gagal mencari data pengembalian'
+  )
+}
+
+export function createReturnTransaction({ member_no, items }) {
+  return adminCirculationRequest(
+    '/return',
+    { method: 'POST', body: { member_no, items } },
+    'Gagal memproses pengembalian buku'
+  )
+}
+
+/**
+ * =========================================================================
+ * ADMIN SIRKULASI: DAFTAR PINJAMAN KOLEKSI (MONITORING)
+ * =========================================================================
+ */
+
+function buildActiveLoanParams({ tab, search, job_category, date, date_field, sort, per_page, page, ids } = {}) {
+  const params = new URLSearchParams()
+  if (tab && tab !== 'all') params.append('tab', tab)
+  if (search) params.append('search', search)
+  if (job_category && job_category !== 'all') params.append('job_category', job_category)
+  if (date) {
+    params.append('date', date)
+    params.append('date_field', date_field || 'loan_date')
+  }
+  if (sort) params.append('sort', sort)
+  if (per_page) params.append('per_page', per_page)
+  if (page) params.append('page', page)
+  ;(ids || []).forEach((id) => params.append('ids[]', id))
+  return params
+}
+
+export function fetchActiveLoans(filters = {}) {
+  return adminCirculationRequest(
+    `/active-loans?${buildActiveLoanParams(filters).toString()}`,
+    {},
+    'Gagal mengambil daftar pinjaman'
+  )
+}
+
+export function fetchActiveLoansReport(filters = {}) {
+  const params = buildActiveLoanParams(filters)
+  params.append('format', 'json')
+  return adminCirculationRequest(
+    `/active-loans/export?${params.toString()}`,
+    {},
+    'Gagal mengambil data laporan pinjaman'
+  )
+}
+
+export function syncActiveLoans() {
+  return adminCirculationRequest('/active-loans/sync', { method: 'POST' }, 'Gagal sinkronisasi data pinjaman')
+}
+
+export async function exportActiveLoans(filters = {}) {
+  let token = getAdminToken()
+  if (!token) token = await ensureAdminToken()
+
+  const url = `${API_BASE_URL}/v1/admin/circulation/active-loans/export?${buildActiveLoanParams(filters).toString()}`
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'text/csv',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Gagal mengekspor daftar pinjaman (Status: ${response.status})`)
+  }
+
+  const blob = await response.blob()
+  const downloadUrl = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = `Daftar_Pinjaman_DAPD_Buleleng_${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(downloadUrl)
+}
+
+/**
+ * =========================================================================
+ * ADMIN RUANG BACA: PEMINJAMAN LOKER PENITIPAN
+ * =========================================================================
+ */
+
+export function fetchLockerDeskMember(code) {
+  return adminCirculationRequest(
+    `/member?code=${encodeURIComponent(code)}`,
+    {},
+    'Gagal mengambil data anggota',
+    '/lockers/desk'
+  )
+}
+
+export function fetchLockerDeskLockers() {
+  return adminCirculationRequest('/lockers', {}, 'Gagal mengambil daftar loker', '/lockers/desk')
+}
+
+export function fetchLockerDeskLocker(code) {
+  return adminCirculationRequest(
+    `/locker?code=${encodeURIComponent(code)}`,
+    {},
+    'Gagal memvalidasi kunci loker',
+    '/lockers/desk'
+  )
+}
+
+export function createLockerLoan({ member_no, locker_code, deposit_type }) {
+  return adminCirculationRequest(
+    '/borrow',
+    { method: 'POST', body: { member_no, locker_code, deposit_type } },
+    'Gagal mencatat peminjaman loker',
+    '/lockers/desk'
+  )
+}

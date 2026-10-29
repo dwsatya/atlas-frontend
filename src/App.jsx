@@ -15,6 +15,10 @@ import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import AdminKarantinaKoleksi from './pages/AdminKarantinaKoleksi'
 import AdminEntriAnggota from './pages/AdminEntriAnggota'
 import AdminKeranjangBermasalah from './pages/AdminKeranjangBermasalah'
+import AdminPeminjaman from './pages/AdminPeminjaman'
+import AdminPengembalian from './pages/AdminPengembalian'
+import AdminDaftarPeminjaman from './pages/AdminDaftarPeminjaman'
+import AdminPeminjamanLoker from './pages/AdminPeminjamanLoker'
 import LoginAdmin from './pages/LoginAdmin'
 import Panduan from './pages/Panduan'
 
@@ -154,6 +158,78 @@ export default function App() {
         element={
           <AdminRoute>
             <AdminEntriAnggota />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Sirkulasi Peminjaman Buku Routes */}
+      <Route
+        path="/admin/sirkulasi/peminjaman"
+        element={
+          <AdminRoute>
+            <AdminPeminjaman />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/peminjaman"
+        element={
+          <AdminRoute>
+            <AdminPeminjaman />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Sirkulasi Pengembalian Buku Routes */}
+      <Route
+        path="/admin/sirkulasi/pengembalian"
+        element={
+          <AdminRoute>
+            <AdminPengembalian />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/pengembalian"
+        element={
+          <AdminRoute>
+            <AdminPengembalian />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Sirkulasi Daftar Pinjaman Koleksi Routes */}
+      <Route
+        path="/admin/sirkulasi/daftar"
+        element={
+          <AdminRoute>
+            <AdminDaftarPeminjaman />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/daftar-peminjaman"
+        element={
+          <AdminRoute>
+            <AdminDaftarPeminjaman />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Ruang Baca Peminjaman Loker Routes */}
+      <Route
+        path="/admin/loker"
+        element={
+          <AdminRoute>
+            <AdminPeminjamanLoker />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/peminjaman-loker"
+        element={
+          <AdminRoute>
+            <AdminPeminjamanLoker />
           </AdminRoute>
         }
       />
