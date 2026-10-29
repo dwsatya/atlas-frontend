@@ -223,9 +223,8 @@ export default function AdminPeminjamanLoker() {
       {toast && (
         <div className="fixed top-18 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           <div
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold max-w-sm ${
-              toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
-            }`}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold max-w-sm ${toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+              }`}
           >
             {toast.type === 'error' ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
             <span>{toast.message}</span>
@@ -270,7 +269,6 @@ export default function AdminPeminjamanLoker() {
                 placeholder="Scan kartu atau ketik nomor anggota / NIK / email"
                 className="w-full h-11 pl-11 pr-11 rounded-xl bg-[#EEF3FA] border border-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0B2256] focus:bg-white transition-colors"
               />
-              <ScanBarcode className="w-5 h-5 text-teal-600 absolute right-3.5 top-1/2 -translate-y-1/2" />
             </div>
             <button
               type="submit"
@@ -363,7 +361,6 @@ export default function AdminPeminjamanLoker() {
                   placeholder={canPickLocker ? 'Scan barcode kunci loker (mis. LCK-01)...' : 'Identifikasi anggota terlebih dahulu...'}
                   className="w-full h-11 pl-11 pr-11 rounded-xl bg-[#EEF3FA] border border-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0B2256] focus:bg-white transition-colors disabled:cursor-not-allowed disabled:opacity-70"
                 />
-                <ScanBarcode className="w-5 h-5 text-teal-600 absolute right-3.5 top-1/2 -translate-y-1/2" />
               </div>
               <button
                 type="submit"
@@ -419,11 +416,10 @@ export default function AdminPeminjamanLoker() {
                         disabled={!available || lockerLoading}
                         onClick={() => selectLocker(item.locker_code)}
                         title={available ? `Pilih ${item.locker_code}` : `${item.locker_code}: ${item.status}`}
-                        className={`h-14 rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-colors ${
-                          available
-                            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 cursor-pointer'
-                            : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed line-through'
-                        }`}
+                        className={`h-14 rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-colors ${available
+                          ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 cursor-pointer'
+                          : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed line-through'
+                          }`}
                       >
                         <span className="text-base leading-none">{item.number ?? '#'}</span>
                         <span className="text-[9px] font-medium mt-1 no-underline">{available ? 'Tersedia' : 'Terpakai'}</span>
@@ -461,28 +457,6 @@ export default function AdminPeminjamanLoker() {
                   {service?.is_after_hours ? 'Layanan sudah melewati jam tutup' : 'Sebelum Layanan Tutup'}
                 </p>
               </div>
-            </div>
-
-            <div className="mt-4 rounded-lg bg-white px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <label className="flex items-center gap-2 text-slate-600">
-                <span>Jaminan Dititipkan:</span>
-                <select
-                  value={depositType}
-                  onChange={(e) => setDepositType(e.target.value)}
-                  disabled={Boolean(completed)}
-                  className="h-7 px-2 rounded-md bg-[#EEF3FA] text-xs font-semibold text-[#0B2256] focus:outline-none cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {DEPOSIT_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="text-slate-600">
-                Petugas Loket Sirkulasi:{' '}
-                <span className="font-semibold text-[#0B2256]">{completed?.processed_by || operatorName}</span>
-              </p>
             </div>
           </div>
 

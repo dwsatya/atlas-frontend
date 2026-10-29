@@ -10,6 +10,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { LayananMandiriCard } from '../../components/LayananMandiri'
 import BookCover from '../../components/BookCover'
+import CollectionStatsCard from '../../components/CollectionStatsCard'
 
 
 export default function OpacPage() {
@@ -297,33 +298,7 @@ export default function OpacPage() {
           {/* LEFT SIDEBAR (4 columns) - Identical sizing & style to Landing Page */}
           <aside className="lg:col-span-4 space-y-6">
             {/* Card 1: Statistik Koleksi */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-2 text-[#032360] font-bold text-base border-b border-slate-100 pb-3">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Statistik Koleksi</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                  <span className="block text-[11px] font-semibold text-slate-500">Koleksi Buku</span>
-                  <span className="block text-xl font-extrabold text-[#032360] mt-1">3.482</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                  <span className="block text-[11px] font-semibold text-slate-500">Buku Dipinjam</span>
-                  <span className="block text-xl font-extrabold text-emerald-600 mt-1">8.910</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                  <span className="block text-[11px] font-semibold text-slate-500">Anggota Aktif</span>
-                  <span className="block text-xl font-extrabold text-[#032360] mt-1">624</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                  <span className="block text-[11px] font-semibold text-slate-500">Sirkulasi Hari Ini</span>
-                  <span className="block text-xl font-extrabold text-emerald-600 mt-1">47</span>
-                </div>
-              </div>
-            </div>
+            <CollectionStatsCard />
 
             {/* Card 2: Butuh Bantuan Pustakawan */}
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
