@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { getGoogleLoginUrl } from '../../services/api'
 import background1 from '../../assets/background1.jpeg'
 
+// Sama dengan aturan regex email di MemberRegisterController (backend)
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]{2,}(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+
 export default function RegisterUser() {
     const navigate = useNavigate()
 
@@ -13,11 +16,16 @@ export default function RegisterUser() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
 
-    // Kriteria validasi password: min 8 karakter, 1 angka, 1 simbol
+    // Validasi format email: nama@domain.tld
+    const isEmailValid = EMAIL_REGEX.test(email.trim())
+    const showEmailError = email.trim() !== '' && !isEmailValid
+
+    // Kriteria validasi password: min 8 karakter, huruf besar & kecil, 1 angka, 1 simbol
     const hasMinLength = password.length >= 8
+    const hasMixedCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
     const hasNumber = /\d/.test(password)
     const hasSymbol = /[^A-Za-z0-9\s]/.test(password)
-    const isPasswordValid = hasMinLength && hasNumber && hasSymbol
+    const isPasswordValid = hasMinLength && hasMixedCase && hasNumber && hasSymbol
     const passwordsMatch = Boolean(confirmPassword && password === confirmPassword)
 
     const handleSubmit = (e) => {
@@ -28,8 +36,16 @@ export default function RegisterUser() {
             setErrorMessage('Email dan password wajib diisi.')
             return
         }
+        if (!isEmailValid) {
+            setErrorMessage('Format email tidak valid. Contoh: nama@domain.com')
+            return
+        }
         if (!hasMinLength) {
             setErrorMessage('Password minimal harus 8 karakter.')
+            return
+        }
+        if (!hasMixedCase) {
+            setErrorMessage('Password harus mengandung minimal 1 huruf besar (A-Z) dan 1 huruf kecil (a-z).')
             return
         }
         if (!hasNumber) {
@@ -133,8 +149,18 @@ export default function RegisterUser() {
                                 if (errorMessage) setErrorMessage('')
                             }}
                             placeholder="example@domain.com"
-                            className="w-full px-5 py-3 rounded-full border border-slate-300 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#032360] focus:ring-1 focus:ring-[#032360] transition-all"
+                            aria-invalid={showEmailError}
+                            className={`w-full px-5 py-3 rounded-full border text-slate-800 placeholder-slate-400 text-sm focus:outline-none transition-all ${
+                                showEmailError
+                                    ? 'border-red-400 focus:ring-1 focus:ring-red-400'
+                                    : 'border-slate-300 focus:border-[#032360] focus:ring-1 focus:ring-[#032360]'
+                            }`}
                         />
+                        {showEmailError && (
+                            <p className="text-xs text-red-600 pl-4">
+                                Format email tidak valid. Contoh: nama@domain.com
+                            </p>
+                        )}
                     </div>
 
                     {/* Password Input */}
@@ -226,6 +252,16 @@ export default function RegisterUser() {
                                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mx-1.5" />
                                     )}
                                     <span>Minimal 8 karakter</span>
+                                </li>
+                                <li className={`flex items-center gap-2 transition-colors ${hasMixedCase ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasMixedCase ? (
+                                        <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mx-1.5" />
+                                    )}
+                                    <span>Minimal 1 huruf besar (A-Z) dan 1 huruf kecil (a-z)</span>
                                 </li>
                                 <li className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
                                     {hasNumber ? (
