@@ -371,9 +371,8 @@ export default function AdminDaftarPeminjaman() {
       {toast && (
         <div className="fixed top-18 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           <div
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold max-w-sm ${
-              toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
-            }`}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold max-w-sm ${toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+              }`}
           >
             {toast.type === 'error' ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
             <span>{toast.message}</span>
@@ -488,16 +487,14 @@ export default function AdminDaftarPeminjaman() {
                   key={item.key}
                   type="button"
                   onClick={() => changeFilter(setTab)(item.key)}
-                  className={`h-8 px-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
-                    active ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] text-slate-700 hover:bg-[#DCE6F7]'
-                  }`}
+                  className={`h-8 px-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${active ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] text-slate-700 hover:bg-[#DCE6F7]'
+                    }`}
                 >
                   {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />}
                   <span>{item.label}</span>
                   <span
-                    className={`px-1.5 rounded-full text-[10px] font-bold ${
-                      active ? 'bg-white/20 text-white' : item.badge || 'bg-[#DCE6F7] text-[#0B2256]'
-                    }`}
+                    className={`px-1.5 rounded-full text-[10px] font-bold ${active ? 'bg-white/20 text-white' : item.badge || 'bg-[#DCE6F7] text-[#0B2256]'
+                      }`}
                   >
                     {formatNumber(stats?.[item.statKey])}
                   </span>
@@ -547,16 +544,6 @@ export default function AdminDaftarPeminjaman() {
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((prev) => !prev)}
-                title="Filter lanjutan"
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                  showAdvanced ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] hover:bg-[#DCE6F7] text-[#0B2256]'
-                }`}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
@@ -571,9 +558,8 @@ export default function AdminDaftarPeminjaman() {
                   key={option.value}
                   type="button"
                   onClick={() => changeFilter(setDateField)(option.value)}
-                  className={`h-7 px-3 rounded-full font-semibold transition-colors cursor-pointer ${
-                    dateField === option.value ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] hover:bg-[#DCE6F7] text-slate-700'
-                  }`}
+                  className={`h-7 px-3 rounded-full font-semibold transition-colors cursor-pointer ${dateField === option.value ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] hover:bg-[#DCE6F7] text-slate-700'
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -781,9 +767,8 @@ export default function AdminDaftarPeminjaman() {
                       key={item}
                       type="button"
                       onClick={() => setPage(item)}
-                      className={`min-w-8 h-8 px-2 rounded-lg font-semibold transition-colors cursor-pointer ${
-                        item === meta.current_page ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] hover:bg-[#DCE6F7] text-[#0B2256]'
-                      }`}
+                      className={`min-w-8 h-8 px-2 rounded-lg font-semibold transition-colors cursor-pointer ${item === meta.current_page ? 'bg-[#0B2256] text-white' : 'bg-[#EEF3FA] hover:bg-[#DCE6F7] text-[#0B2256]'
+                        }`}
                     >
                       {item}
                     </button>
