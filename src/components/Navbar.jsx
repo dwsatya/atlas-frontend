@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import logoatlas from '../assets/logoatlas.png'
 import { notifyLogoutSuccess } from '../utils/notification'
 import MobileBottomNav from './MobileBottomNav'
+import { LayananMandiriDropdown } from './LayananMandiri'
 
 /**
  * Komponen Navbar Terpadu & Seragam ATLAS
@@ -34,6 +35,9 @@ export default function Navbar() {
     location.pathname.startsWith('/detail-buku')
   const isProfileActive = location.pathname.startsWith('/profile') || location.pathname.startsWith('/profil')
   const isPanduanActive = location.pathname.startsWith('/panduan')
+  const isLayananActive =
+    ['/reservasi-saya', '/pinjaman-saya'].includes(location.pathname) ||
+    (location.pathname === '/opac' && location.search.includes('favorit=1'))
 
   return (
     <>
@@ -70,7 +74,11 @@ export default function Navbar() {
           </button>
 
           {/* Layanan Mandiri Dropdown */}
-          <div className="relative group cursor-pointer flex items-center gap-1 text-white/80 hover:text-white transition-colors py-2">
+          <div
+            className={`relative group cursor-pointer flex items-center gap-1 transition-colors py-2 ${
+              isLayananActive ? 'text-white font-bold' : 'text-white/80 hover:text-white'
+            }`}
+          >
             <span>Layanan Mandiri</span>
             <svg
               className="w-4 h-4 transition-transform group-hover:rotate-180"
@@ -82,32 +90,7 @@ export default function Navbar() {
             </svg>
 
             {/* Dropdown Menu on Desktop */}
-            <div className="absolute top-full left-0 mt-1 w-56 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-100 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <button
-                type="button"
-                onClick={() => navigate('/panduan#baca-ditempat')}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-2.5 cursor-pointer"
-              >
-                <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                <span>Baca Ditempat</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/panduan#cek-pengembalian')}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-2.5 cursor-pointer"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                <span>Cek Pengembalian</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/panduan#usulan-buku')}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-2.5 cursor-pointer"
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-600" />
-                <span>Usulan Pengadaan Buku</span>
-              </button>
-            </div>
+            <LayananMandiriDropdown />
           </div>
 
           {/* Panduan */}

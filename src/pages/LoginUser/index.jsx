@@ -1,15 +1,34 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { loginMember, getGoogleLoginUrl } from '../../services/api'
 import { notifyLoginSuccess } from '../../utils/notification'
 import background1 from '../../assets/background1.jpeg'
 
+const REDIRECT_KEY = 'atlas_login_redirect'
+
+// Ambil tujuan setelah login: halaman asal, atau yang tersimpan sebelum redirect Login Google
+const consumeRedirect = (fromPath) => {
+    const target = fromPath || sessionStorage.getItem(REDIRECT_KEY) || '/'
+    sessionStorage.removeItem(REDIRECT_KEY)
+    return target
+}
+
 export default function LoginUser() {
     const navigate = useNavigate()
+    const location = useLocation()
     const [searchParams] = useSearchParams()
     const { login } = useAuth()
     const hasHandledOAuth = useRef(false)
+
+    // Halaman asal (mis. Detail Buku saat klik Reservasi) untuk dikembalikan setelah login.
+    // Disimpan juga di sessionStorage agar tetap terbawa setelah redirect Login Google.
+    const fromLocation = location.state?.from
+    const fromPath = fromLocation ? `${fromLocation.pathname}${fromLocation.search || ''}` : null
+
+    useEffect(() => {
+        if (fromPath) sessionStorage.setItem(REDIRECT_KEY, fromPath)
+    }, [fromPath])
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -34,7 +53,7 @@ export default function LoginUser() {
                 notifyLoginSuccess(parsedUser.name || parsedUser.nama_lengkap || parsedUser.email, false)
 
                 if (parsedUser.has_completed_data) {
-                    navigate('/', { replace: true })
+                    navigate(consumeRedirect(fromPath), { replace: true })
                 } else {
                     // Lanjut ke form data diri setelah login dengan Google
                     navigate('/form-data-diri', {
@@ -51,7 +70,7 @@ export default function LoginUser() {
                 console.error('Failed to parse Google user parameter:', err)
             }
         }
-    }, [searchParams, login, navigate])
+    }, [searchParams, login, navigate, fromPath])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -66,7 +85,7 @@ export default function LoginUser() {
                 const token = response?.token || response?.data?.token
                 login(memberData, token)
                 notifyLoginSuccess(memberData.name || memberData.nama_lengkap || email.split('@')[0], false)
-                navigate('/')
+                navigate(consumeRedirect(fromPath), { replace: true })
             }
         } catch (err) {
             setErrorMessage(err.message || 'Email atau password salah.')

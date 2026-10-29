@@ -46,3 +46,17 @@ export const notifyLogoutSuccess = (isAdmin = false) => {
 
 export { notification }
 export default notification
+
+/**
+ * Notifikasi wajib login sebelum mengakses fitur khusus anggota (mis. Reservasi Buku)
+ * @param {string} description - Pesan yang ditampilkan
+ */
+export const notifyLoginRequired = (description = 'Wajib Login terlebih dahulu untuk melakukan Reservasi Buku') => {
+  notification.warning({
+    key: 'login_required_notification',
+    message: 'Login Diperlukan',
+    description,
+    placement: 'topRight',
+    duration: 4,
+  })
+}

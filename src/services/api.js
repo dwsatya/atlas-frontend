@@ -1,22 +1,28 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
 
-export async function fetchBooks({ search = '', page = 1 } = {}) {
+export async function fetchBooks({ search = '', page = 1, favorites = false } = {}) {
   const params = new URLSearchParams()
   if (search) params.append('search', search)
   if (page) params.append('page', page)
+  if (favorites) params.append('favorites', '1')
 
   const url = `${API_BASE_URL}/books?${params.toString()}`
+  // Filter favorit membutuhkan token anggota; katalog publik tetap tanpa token
+  const token = favorites ? localStorage.getItem('atlas_token') : null
 
   try {
     const response = await fetch(url, {
       headers: {
         Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     })
 
     if (!response.ok) {
-      throw new Error(`Gagal mengambil data buku (Status: ${response.status})`)
+      const error = new Error(`Gagal mengambil data buku (Status: ${response.status})`)
+      error.status = response.status
+      throw error
     }
 
     const result = await response.json()
@@ -2080,4 +2086,99 @@ export function createLockerLoan({ member_no, locker_code, deposit_type }) {
     'Gagal mencatat peminjaman loker',
     '/lockers/desk'
   )
+}
+
+/**
+ * =========================================================================
+ * LAYANAN MANDIRI ANGGOTA: RESERVASI SAYA & PINJAMAN SAYA
+ * =========================================================================
+ */
+
+async function memberRequest(path, { method = 'GET', body } = {}, fallbackMessage) {
+  const token = localStorage.getItem('atlas_token')
+
+  const response = await fetch(`${API_BASE_URL}/v1/member${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
+
+  const result = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const errorMessage =
+      result?.message ||
+      (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+      `${fallbackMessage} (Status: ${response.status})`
+    const error = new Error(errorMessage)
+    error.status = response.status
+    error.data = result
+    throw error
+  }
+
+  return result
+}
+
+export function fetchMyReservations() {
+  return memberRequest('/reservations', {}, 'Gagal mengambil daftar reservasi')
+}
+
+export function createReservation(catalogId) {
+  return memberRequest('/reservations', { method: 'POST', body: { catalog_id: catalogId } }, 'Gagal membuat reservasi')
+}
+
+export function cancelReservation(reservationId) {
+  return memberRequest(`/reservations/${reservationId}/cancel`, { method: 'POST' }, 'Gagal membatalkan reservasi')
+}
+
+export function fetchMyLoans() {
+  return memberRequest('/loans', {}, 'Gagal mengambil daftar pinjaman')
+}
+
+/**
+ * =========================================================================
+ * ADMIN SIRKULASI: RESERVASI (VERIFIKASI RAK & PENGAMBILAN)
+ * =========================================================================
+ */
+
+export function fetchAdminReservations({ tab = 'pending', search = '', page = 1, per_page = 10 } = {}) {
+  const params = new URLSearchParams({ tab, page, per_page })
+  if (search) params.append('search', search)
+  return adminCirculationRequest(`/reservation-desk?${params.toString()}`, {}, 'Gagal mengambil daftar reservasi')
+}
+
+export function lookupAdminReservation(code) {
+  return adminCirculationRequest(
+    `/reservation-desk/lookup?code=${encodeURIComponent(code)}`,
+    {},
+    'Gagal mencari kode reservasi'
+  )
+}
+
+export function confirmReservationReady(id) {
+  return adminCirculationRequest(`/reservation-desk/${id}/confirm-ready`, { method: 'POST' }, 'Gagal memverifikasi reservasi')
+}
+
+export function markReservationUnavailable(id) {
+  return adminCirculationRequest(`/reservation-desk/${id}/mark-unavailable`, { method: 'POST' }, 'Gagal menandai reservasi')
+}
+
+export function pickupReservation(id, durationDays) {
+  return adminCirculationRequest(
+    `/reservation-desk/${id}/pickup`,
+    { method: 'POST', body: { duration_days: durationDays } },
+    'Gagal memproses pengambilan reservasi'
+  )
+}
+
+export function fetchFavoriteIds() {
+  return memberRequest('/favorites', {}, 'Gagal mengambil buku favorit')
+}
+
+export function toggleFavorite(catalogId) {
+  return memberRequest(`/favorites/${catalogId}/toggle`, { method: 'POST' }, 'Gagal memperbarui buku favorit')
 }

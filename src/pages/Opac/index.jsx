@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import background2 from '../../assets/background2.jpeg'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
+import { Star } from 'lucide-react'
+import background1 from '../../assets/background1.jpeg'
 import logoatlas from '../../assets/logoatlas.png'
-import { fetchBooks } from '../../services/api'
+import { fetchBooks, fetchFavoriteIds, toggleFavorite } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { notification, notifyLoginRequired } from '../../utils/notification'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import { LayananMandiriCard } from '../../components/LayananMandiri'
+import BookCover from '../../components/BookCover'
 
 
 export default function OpacPage() {
@@ -34,34 +39,112 @@ export default function OpacPage() {
     'Cerita Rakyat',
   ]
 
-  const loadBooks = useCallback(async (keyword = '', page = 1) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetchBooks({ search: keyword, page })
-      const bookList = res?.data?.data || res?.data || []
-      setBooks(bookList)
-      if (res?.data?.meta) {
-        setMeta(res.data.meta)
+  const location = useLocation()
+  const { user } = useAuth()
+  const isMemberLoggedIn = Boolean(user && localStorage.getItem('atlas_token'))
+  const showFavorites = searchParams.get('favorit') === '1'
+  const [favoriteIds, setFavoriteIds] = useState([])
+
+  const redirectToLogin = useCallback(
+    (search) => {
+      notifyLoginRequired('Wajib Login terlebih dahulu untuk melihat dan menandai Buku Favorit')
+      navigate('/login', { state: { from: { pathname: location.pathname, search } } })
+    },
+    [navigate, location.pathname]
+  )
+
+  const loadBooks = useCallback(
+    async (keyword = '', page = 1, favorites = false) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetchBooks({ search: keyword, page, favorites })
+        const bookList = res?.data?.data || res?.data || []
+        setBooks(bookList)
+        if (res?.data?.meta) {
+          setMeta(res.data.meta)
+        }
+      } catch (err) {
+        if (favorites && err.status === 401) {
+          redirectToLogin('?favorit=1')
+          return
+        }
+        console.error('Failed to load books in OPAC:', err)
+        setError('Gagal memuat katalog buku.')
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error('Failed to load books in OPAC:', err)
-      setError('Gagal memuat katalog buku.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+    [redirectToLogin]
+  )
 
   useEffect(() => {
     const q = searchParams.get('search') || ''
     setSearchKeyword(q)
-    loadBooks(q, currentPage)
-  }, [searchParams, currentPage, loadBooks])
+    if (showFavorites && !isMemberLoggedIn) {
+      redirectToLogin('?favorit=1')
+      return
+    }
+    loadBooks(q, currentPage, showFavorites)
+  }, [searchParams, currentPage, loadBooks, showFavorites, isMemberLoggedIn, redirectToLogin])
+
+  // Daftar ID favorit untuk menandai bintang pada kartu buku
+  useEffect(() => {
+    if (!isMemberLoggedIn) return
+    let cancelled = false
+    fetchFavoriteIds()
+      .then((result) => {
+        if (!cancelled) setFavoriteIds(result.data.catalog_ids)
+      })
+      .catch(() => { })
+    return () => {
+      cancelled = true
+    }
+  }, [isMemberLoggedIn])
+
+  const buildParams = (keyword, favorites) => ({
+    ...(keyword ? { search: keyword } : {}),
+    ...(favorites ? { favorit: '1' } : {}),
+  })
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault()
     setCurrentPage(1)
-    setSearchParams(searchKeyword.trim() ? { search: searchKeyword.trim() } : {})
+    setSearchParams(buildParams(searchKeyword.trim(), showFavorites))
+  }
+
+  const handleToggleFavoriteFilter = () => {
+    if (!isMemberLoggedIn) {
+      redirectToLogin('?favorit=1')
+      return
+    }
+    setCurrentPage(1)
+    setSearchParams(buildParams(searchKeyword.trim(), !showFavorites))
+  }
+
+  const handleToggleBookFavorite = async (book) => {
+    if (!isMemberLoggedIn) {
+      redirectToLogin(location.search)
+      return
+    }
+    try {
+      const result = await toggleFavorite(book.id)
+      setFavoriteIds((prev) =>
+        result.data.is_favorite ? [...prev, book.id] : prev.filter((favId) => favId !== book.id)
+      )
+      if (showFavorites && !result.data.is_favorite) {
+        setBooks((prev) => prev.filter((item) => item.id !== book.id))
+      }
+      notification.success({
+        key: 'favorite_notification',
+        message: result.data.is_favorite ? 'Ditambahkan ke Favorit' : 'Dihapus dari Favorit',
+        description: `"${book.title}"`,
+        placement: 'topRight',
+        duration: 2,
+      })
+    } catch (err) {
+      notification.error({ message: 'Gagal Memperbarui Favorit', description: err.message, placement: 'topRight' })
+    }
   }
 
   return (
@@ -73,34 +156,34 @@ export default function OpacPage() {
       {/* 2. Hero Search Banner Section */}
       <section className="max-w-6xl mx-auto px-4 pt-6 sm:pt-8 w-full">
         <div
-          className="relative rounded-3xl overflow-hidden bg-cover bg-center shadow-lg border border-slate-200/60"
+          className="relative rounded-3xl overflow-hidden bg-cover bg-center shadow-lg"
           style={{
-            backgroundImage: `linear-gradient(to bottom, rgba(0, 37, 92, 0.90), rgba(0, 20, 55, 0.95)), url(${background2})`,
+            backgroundImage: `linear-gradient(to bottom, rgba(8, 28, 66, 0.35) 0%, rgba(4, 34, 84, 0.6) 45%, rgba(0, 28, 74, 0.9) 100%), url(${background1})`,
           }}
         >
           <div className="p-6 sm:p-8 md:p-10 flex flex-col items-center text-center">
             {/* Badge pill */}
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] sm:text-xs font-semibold tracking-wider uppercase mb-3 shadow-sm">
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 text-white text-[10px] sm:text-xs font-semibold tracking-wider uppercase mb-3 shadow-sm">
               APLIKASI TERPADU LAYANAN ARSIP & SIRKULASI
             </div>
 
             {/* Main Heading */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-3xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
               Katalog Perpustakaan Online (OPAC)
             </h1>
-            <p className="text-xs sm:text-sm text-slate-200 mt-2 max-w-2xl font-normal leading-relaxed">
-              Temukan referensi, buku ajar, modul santri, dan koleksi literatur dengan mudah dan cepat.
+            <p className="text-xs sm:text-sm text-white/90 mt-2 max-w-2xl font-normal leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+              Temukan referensi, buku ajar dan koleksi literatur dengan mudah dan cepat.
             </p>
 
             {/* Search Box Container */}
-            <form onSubmit={handleSearchSubmit} className="w-full max-w-4xl bg-white rounded-2xl p-4 sm:p-5 shadow-2xl mt-6 text-slate-800 space-y-3 text-left">
+            <form onSubmit={handleSearchSubmit} className="w-full max-w-4xl bg-white rounded-2xl p-4 sm:p-5 shadow-2xl mt-6 text-slate-800 space-y-3.5 text-left">
               {/* Top Row: Dropdown, Search Input, Search Button */}
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <div className="relative shrink-0 sm:w-44">
                   <select
                     value={searchCategory}
                     onChange={(e) => setSearchCategory(e.target.value)}
-                    className="w-full h-11 px-3.5 pr-8 bg-slate-100 hover:bg-slate-200/70 text-slate-800 text-xs sm:text-sm font-bold rounded-xl appearance-none border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#002B66] cursor-pointer transition-colors"
+                    className="w-full h-11 px-3.5 pr-8 bg-[#E8EFFA] hover:bg-[#DCE6F7] text-[#032360] text-xs sm:text-sm font-bold rounded-xl appearance-none border border-transparent focus:outline-none focus:ring-2 focus:ring-[#002B66] cursor-pointer transition-colors"
                   >
                     <option>Judul Buku</option>
                     <option>Pengarang</option>
@@ -116,7 +199,7 @@ export default function OpacPage() {
                 </div>
 
                 <div className="relative flex-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
@@ -126,7 +209,7 @@ export default function OpacPage() {
                     value={searchKeyword}
                     onChange={(e) => setSearchKeyword(e.target.value)}
                     placeholder="Masukkan kata kunci pencarian judul, pengarang, topik..."
-                    className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#002B66] focus:border-[#002B66] transition-all"
+                    className="w-full h-11 pl-10 pr-4 bg-[#EEF3FA] border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#002B66] transition-all"
                   />
                 </div>
 
@@ -142,40 +225,40 @@ export default function OpacPage() {
               </div>
 
               {/* Bottom Row: Additional Filters */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1 border-t border-slate-100">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 <input
                   type="text"
                   value={filterPengarang}
                   onChange={(e) => setFilterPengarang(e.target.value)}
                   placeholder="Filter Pengarang..."
-                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#002B66]"
+                  className="h-9 px-3 bg-[#F2F6FC] border border-transparent rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#002B66]"
                 />
                 <input
                   type="text"
                   value={filterPenerbit}
                   onChange={(e) => setFilterPenerbit(e.target.value)}
                   placeholder="Filter Penerbit..."
-                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#002B66]"
+                  className="h-9 px-3 bg-[#F2F6FC] border border-transparent rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#002B66]"
                 />
                 <input
                   type="text"
                   value={filterSubjek}
                   onChange={(e) => setFilterSubjek(e.target.value)}
                   placeholder="Filter Subjek..."
-                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#002B66]"
+                  className="h-9 px-3 bg-[#F2F6FC] border border-transparent rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#002B66]"
                 />
                 <input
                   type="text"
                   value={filterTahun}
                   onChange={(e) => setFilterTahun(e.target.value)}
                   placeholder="Filter Tahun (cth. 2023)"
-                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#002B66]"
+                  className="h-9 px-3 bg-[#F2F6FC] border border-transparent rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#002B66]"
                 />
                 <div className="relative col-span-2 sm:col-span-1">
                   <select
                     value={filterBahan}
                     onChange={(e) => setFilterBahan(e.target.value)}
-                    className="w-full h-9 px-3 pr-7 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 appearance-none focus:outline-none focus:ring-1 focus:ring-[#002B66] cursor-pointer"
+                    className="w-full h-9 px-3 pr-7 bg-[#F2F6FC] border border-transparent rounded-xl text-xs text-slate-800 appearance-none focus:outline-none focus:ring-1 focus:ring-[#002B66] cursor-pointer"
                   >
                     <option>Semua Jenis Bahan</option>
                     <option>Buku Cetak</option>
@@ -193,12 +276,12 @@ export default function OpacPage() {
 
             {/* Popular Searches */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-white/90">
-              <span className="font-semibold text-white/70">Pencarian Populer:</span>
+              <span className="font-medium text-white/80">Pencarian Populer:</span>
               {popularSearches.map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSearchKeyword(item)}
-                  className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[11px] font-medium transition-colors cursor-pointer"
+                  className="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/25 text-white text-[11px] font-medium transition-colors cursor-pointer"
                 >
                   {item}
                 </button>
@@ -271,79 +354,47 @@ export default function OpacPage() {
             </div>
 
             {/* Card 3: Layanan Mandiri */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3">
-              <div className="flex items-center space-x-2 text-[#032360] font-bold text-base border-b border-slate-100 pb-3">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>Layanan Mandiri</span>
-              </div>
-
-              <div className="space-y-2">
-                <a
-                  href="#baca-ditempat"
-                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <span>Baca Ditempat</span>
-                  </div>
-                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </a>
-
-                <a
-                  href="#cek-pengembalian"
-                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                      </svg>
-                    </div>
-                    <span>Cek Pengembalian</span>
-                  </div>
-                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </a>
-
-                <a
-                  href="#usulan-buku"
-                  className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-800 transition-colors"
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-100/70 text-amber-600 flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                      </svg>
-                    </div>
-                    <span>Usulan Pengadaan Buku</span>
-                  </div>
-                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </a>
-              </div>
-            </div>
+            <LayananMandiriCard />
           </aside>
 
           {/* RIGHT MAIN CONTENT (8 columns) */}
           <section className="lg:col-span-8 space-y-6">
-            {/* Header: Koleksi Terbaru */}
-            <div>
-              <h2 className="text-2xl font-extrabold text-[#032360] tracking-tight">
-                Koleksi Terbaru
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Buku-buku yang baru saja ditambahkan.
-              </p>
+            {/* Header: Koleksi Terbaru / Buku Favorit Saya */}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#032360] tracking-tight">
+                  {showFavorites ? 'Buku Favorit Saya' : 'Koleksi Terbaru'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {showFavorites
+                    ? 'Koleksi yang Anda tandai dengan bintang.'
+                    : 'Buku-buku yang baru saja ditambahkan.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleFavoriteFilter}
+                aria-pressed={showFavorites}
+                title={showFavorites ? 'Tampilkan semua koleksi' : 'Tampilkan hanya Buku Favorit Saya'}
+                className={`shrink-0 px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${showFavorites
+                    ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+              >
+                <Star
+                  className={`w-4 h-4 ${showFavorites ? 'fill-amber-400 stroke-amber-500' : 'stroke-current'}`}
+                  strokeWidth={2}
+                />
+                <span>{showFavorites ? 'Favorit Saya' : 'Favorit'}</span>
+                {isMemberLoggedIn && favoriteIds.length > 0 && (
+                  <span
+                    className={`px-1.5 rounded-md text-[10px] ${showFavorites ? 'bg-amber-200/70 text-amber-800' : 'bg-slate-100 text-slate-500'
+                      }`}
+                  >
+                    {favoriteIds.length}
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* 10 Book Cards Grid (2 Columns) */}
@@ -385,8 +436,14 @@ export default function OpacPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <p className="text-sm font-bold text-slate-700">Tidak ada buku yang sesuai dengan pencarian.</p>
-                <p className="text-xs text-slate-500">Coba gunakan kata kunci lain atau bersihkan filter.</p>
+                <p className="text-sm font-bold text-slate-700">
+                  {showFavorites ? 'Belum ada Buku Favorit.' : 'Tidak ada buku yang sesuai dengan pencarian.'}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {showFavorites
+                    ? 'Tandai buku dengan ikon bintang agar mudah ditemukan kembali di sini.'
+                    : 'Coba gunakan kata kunci lain atau bersihkan filter.'}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -395,35 +452,41 @@ export default function OpacPage() {
                     key={book.id || book.title}
                     className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex gap-3.5 items-stretch justify-between group"
                   >
-                    {/* Left: Book Cover Placeholder */}
-                    <div className="w-28 sm:w-32 h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex flex-col items-center justify-center p-2 text-center text-slate-400 font-medium text-xs leading-snug shrink-0 group-hover:from-indigo-50 group-hover:to-slate-100 transition-colors">
-                      <div className="w-9 h-9 rounded-full bg-white/80 shadow-sm flex items-center justify-center text-[#002B66] mb-1.5">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                      <span className="line-clamp-2 text-[10px] font-semibold text-slate-600">
-                        {book.title}
-                      </span>
-                    </div>
+                    {/* Left: Book Cover */}
+                    <BookCover book={book} className="w-28 sm:w-32 h-48 rounded-xl shrink-0" />
 
                     {/* Right: Book Details */}
                     <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
                       <div className="space-y-2">
                         {/* Badge Category & Status */}
                         <div className="flex items-center justify-between gap-1">
-                          <span className="bg-blue-100 text-[#002B66] text-[10px] font-bold px-2 py-0.5 rounded-md truncate">
-                            {book.material_type || 'Buku Cetak'}
-                          </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="bg-blue-100 text-[#002B66] text-[10px] font-bold px-2 py-0.5 rounded-md truncate">
+                              {book.material_type || 'Buku Cetak'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleBookFavorite(book)}
+                              aria-pressed={favoriteIds.includes(book.id)}
+                              title={favoriteIds.includes(book.id) ? 'Hapus dari Favorit' : 'Tandai sebagai Favorit'}
+                              className="p-0.5 rounded-md hover:bg-amber-50 cursor-pointer shrink-0"
+                            >
+                              <Star
+                                className={`w-3.5 h-3.5 ${favoriteIds.includes(book.id)
+                                    ? 'fill-amber-400 stroke-amber-500'
+                                    : 'stroke-slate-400 hover:stroke-amber-500'
+                                  }`}
+                                strokeWidth={2}
+                              />
+                            </button>
+                          </div>
                           <div
-                            className={`flex items-center space-x-1 text-[11px] font-bold ${
-                              (book.available_copies ?? 1) > 0 ? 'text-emerald-600' : 'text-rose-600'
-                            }`}
+                            className={`flex items-center space-x-1 text-[11px] font-bold ${(book.available_copies ?? 1) > 0 ? 'text-emerald-600' : 'text-rose-600'
+                              }`}
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                (book.available_copies ?? 1) > 0 ? 'bg-emerald-500' : 'bg-rose-500'
-                              }`}
+                              className={`w-1.5 h-1.5 rounded-full ${(book.available_copies ?? 1) > 0 ? 'bg-emerald-500' : 'bg-rose-500'
+                                }`}
                             />
                             <span>
                               {(book.available_copies ?? 1) > 0
@@ -503,11 +566,10 @@ export default function OpacPage() {
                         key={pageNum}
                         type="button"
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-colors cursor-pointer ${
-                          currentPage === pageNum
+                        className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-colors cursor-pointer ${currentPage === pageNum
                             ? 'bg-[#002B66] text-white'
                             : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>

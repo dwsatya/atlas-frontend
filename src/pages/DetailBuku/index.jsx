@@ -1,19 +1,107 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Star } from 'lucide-react'
 import logoatlas from '../../assets/logoatlas.png'
-import { fetchBookById } from '../../services/api'
+import { fetchBookById, createReservation, fetchFavoriteIds, toggleFavorite } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { notification, notifyLoginRequired } from '../../utils/notification'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import ReservationDialog from './ReservationDialog'
+import BookCover from '../../components/BookCover'
+import { getBookCoverUrl } from '../../utils/bookCover'
 
 
 export default function DetailBuku() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
+
+  const isMemberLoggedIn = Boolean(user && localStorage.getItem('atlas_token'))
+
+  // Overlay reservasi: null | { mode: 'confirm' } | { mode: 'success', reservation }
+  const [reservationDialog, setReservationDialog] = useState(null)
+  const [reserving, setReserving] = useState(false)
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
+
+  const redirectToLogin = (message) => {
+    notifyLoginRequired(message)
+    navigate('/login', { state: { from: location } })
+  }
+
+  const submitReservation = async () => {
+    setReserving(true)
+    try {
+      const result = await createReservation(book.id)
+      setBook((prev) => ({ ...prev, available_copies: Math.max(0, (prev.available_copies ?? 1) - 1) }))
+      setReservationDialog({ mode: 'success', reservation: result.data })
+    } catch (err) {
+      setReservationDialog(null)
+      if (err.status === 401) {
+        redirectToLogin()
+        return
+      }
+      notification.error({ message: 'Reservasi Gagal', description: err.message, placement: 'topRight' })
+    } finally {
+      setReserving(false)
+    }
+  }
+
+  const handleReserve = () => {
+    if (!isMemberLoggedIn) {
+      redirectToLogin()
+      return
+    }
+    setReservationDialog({ mode: 'confirm' })
+  }
+
+  const handleToggleFavorite = async () => {
+    if (!isMemberLoggedIn) {
+      redirectToLogin('Wajib Login terlebih dahulu untuk menandai Buku Favorit')
+      return
+    }
+
+    setFavoriteBusy(true)
+    try {
+      const result = await toggleFavorite(book.id)
+      setIsFavorite(result.data.is_favorite)
+      notification.success({
+        key: 'favorite_notification',
+        message: result.data.is_favorite ? 'Ditambahkan ke Favorit' : 'Dihapus dari Favorit',
+        description: result.message,
+        placement: 'topRight',
+        duration: 2.5,
+      })
+    } catch (err) {
+      if (err.status === 401) {
+        redirectToLogin('Wajib Login terlebih dahulu untuk menandai Buku Favorit')
+        return
+      }
+      notification.error({ message: 'Gagal Memperbarui Favorit', description: err.message, placement: 'topRight' })
+    } finally {
+      setFavoriteBusy(false)
+    }
+  }
 
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isFavorite, setIsFavorite] = useState(false)
+
+  // Tandai bintang jika buku ini sudah ada di favorit anggota
+  useEffect(() => {
+    if (!id || !isMemberLoggedIn) return
+    let cancelled = false
+    fetchFavoriteIds()
+      .then((result) => {
+        if (!cancelled) setIsFavorite(result.data.catalog_ids.map(String).includes(String(id)))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [id, isMemberLoggedIn])
   const [quickSearch, setQuickSearch] = useState('')
   const [showCoverModal, setShowCoverModal] = useState(false)
   const [copiedFormat, setCopiedFormat] = useState(null)
@@ -175,47 +263,26 @@ ER  - `
               <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200/80 flex flex-col md:flex-row gap-7 items-start">
                 {/* Book Cover Container */}
                 <div className="flex flex-col items-center shrink-0 w-full md:w-52">
-                  <div className="w-full h-72 rounded-2xl bg-gradient-to-br from-[#001D48] via-[#002B66] to-[#041c3d] text-white p-5 flex flex-col justify-between text-center shadow-xl border border-indigo-900/30 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
-                    <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <BookCover
+                    book={book}
+                    className="w-full h-72 rounded-2xl shadow-sm"
+                    iconClassName="w-12 h-12"
+                    labelClassName="text-sm"
+                  />
 
-                    {/* Book Cover Header Icon */}
-                    <div className="flex justify-center pt-2">
-                      <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white/90 shadow-inner">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    {/* Title & Author on Cover */}
-                    <div className="space-y-1.5 py-4">
-                      <h3 className="font-extrabold text-base sm:text-lg leading-snug line-clamp-3 text-white tracking-wide">
-                        {book.title}
-                      </h3>
-                      <p className="text-xs text-indigo-200 line-clamp-2 font-medium">
-                        {book.author_main || book.author || 'Dinas Perpustakaan'}
-                      </p>
-                    </div>
-
-                    {/* Bottom Publisher & Year */}
-                    <div className="text-[11px] text-slate-300/90 pt-3 border-t border-white/10 flex items-center justify-between font-medium">
-                      <span className="truncate max-w-[100px]">{book.publisher || 'Buleleng Lib'}</span>
-                      <span>{book.publish_year || '-'}</span>
-                    </div>
-                  </div>
-
-                  {/* Zoom Modal Button */}
-                  <button
-                    type="button"
-                    onClick={() => setShowCoverModal(true)}
-                    className="mt-3 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <span>Perbesar Sampul Fisik</span>
-                  </button>
+                  {/* Zoom Modal Button (hanya bila sampul tersedia) */}
+                  {getBookCoverUrl(book) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCoverModal(true)}
+                      className="mt-3 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span>Perbesar Sampul</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Book Main Details */}
@@ -325,32 +392,42 @@ ER  - `
                   <div className="pt-3 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setIsFavorite(!isFavorite)}
-                      className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all cursor-pointer active:scale-95 ${
+                      onClick={handleToggleFavorite}
+                      disabled={favoriteBusy}
+                      aria-pressed={isFavorite}
+                      title={isFavorite ? 'Hapus dari Buku Favorit' : 'Tandai sebagai Buku Favorit'}
+                      className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all cursor-pointer active:scale-95 disabled:opacity-60 ${
                         isFavorite
-                          ? 'bg-rose-50 border-rose-300 text-rose-600'
+                          ? 'bg-amber-50 border-amber-300 text-amber-700'
                           : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <svg
-                        className={`w-4 h-4 ${isFavorite ? 'fill-rose-500 stroke-rose-500' : 'fill-none stroke-current'}`}
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                      </svg>
+                      <Star
+                        className={`w-4 h-4 transition-transform ${favoriteBusy ? 'animate-pulse' : ''} ${
+                          isFavorite ? 'fill-amber-400 stroke-amber-500 scale-110' : 'fill-none stroke-current'
+                        }`}
+                        strokeWidth={2}
+                      />
                       <span>{isFavorite ? 'Tersimpan di Favorit' : 'Favorit'}</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => alert(`Pengajuan reservasi untuk buku "${book.title}" sedang diproses. Silakan tunjukkan kartu anggota di meja sirkulasi.`)}
-                      className="px-6 py-2.5 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                      onClick={handleReserve}
+                      disabled={reserving || (book.available_copies ?? 1) <= 0}
+                      title={(book.available_copies ?? 1) <= 0 ? 'Seluruh eksemplar sedang dipinjam / direservasi' : undefined}
+                      className="px-6 py-2.5 rounded-xl bg-[#002B66] hover:bg-[#001D48] text-white font-bold text-xs shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H7.5m9 0a2.25 2.25 0 012.25 2.25v13.5a2.25 2.25 0 01-2.25 2.25H7.5a2.25 2.25 0 01-2.25-2.25V6a2.25 2.25 0 012.25-2.25" />
                       </svg>
-                      <span>Reservasi Buku Ini</span>
+                      <span>
+                        {reserving
+                          ? 'Memproses...'
+                          : (book.available_copies ?? 1) <= 0
+                            ? 'Stok Habis (Tidak Dapat Direservasi)'
+                            : 'Reservasi Buku Ini'}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -894,23 +971,7 @@ ER  - `
               ✕
             </button>
 
-            <div className="w-full h-80 rounded-2xl bg-gradient-to-br from-[#001D48] to-[#032360] text-white p-6 flex flex-col justify-between text-center shadow-xl">
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mx-auto">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-extrabold text-xl text-white">{book.title}</h3>
-                <p className="text-sm text-indigo-200">{book.author_main || 'Penulis Perpustakaan'}</p>
-              </div>
-
-              <div className="text-xs text-slate-300 pt-3 border-t border-white/10 flex justify-between">
-                <span>{book.publisher || 'Buleleng Library'}</span>
-                <span>{book.publish_year || '-'}</span>
-              </div>
-            </div>
+            <BookCover book={book} className="w-full h-80 rounded-2xl" iconClassName="w-14 h-14" labelClassName="text-sm" />
 
             <div className="text-left space-y-1">
               <h4 className="font-bold text-sm text-slate-900">{book.title}</h4>
@@ -924,6 +985,19 @@ ER  - `
 
       {/* 4. Footer Section Terpadu */}
       <Footer />
+
+      {/* Overlay Konfirmasi & Hasil Reservasi Buku */}
+      {reservationDialog && book && (
+        <ReservationDialog
+          mode={reservationDialog.mode}
+          book={book}
+          reservation={reservationDialog.reservation}
+          submitting={reserving}
+          onClose={() => setReservationDialog(null)}
+          onConfirm={submitReservation}
+          onViewReservations={() => navigate('/reservasi-saya')}
+        />
+      )}
     </div>
   )
 }

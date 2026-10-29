@@ -9,12 +9,15 @@ import RegisterUser from './pages/RegisterUser'
 import FormDataDiri from './pages/FormDataDiri'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import ReservasiSaya from './pages/ReservasiSaya'
+import PinjamanSaya from './pages/PinjamanSaya'
 import AdminProfile from './pages/AdminProfile'
 import AdminEntriKatalog from './pages/AdminEntriKatalog'
 import AdminDaftarKoleksi from './pages/AdminDaftarKoleksi'
 import AdminKarantinaKoleksi from './pages/AdminKarantinaKoleksi'
 import AdminEntriAnggota from './pages/AdminEntriAnggota'
 import AdminKeranjangBermasalah from './pages/AdminKeranjangBermasalah'
+import AdminReservasi from './pages/AdminReservasi'
 import AdminPeminjaman from './pages/AdminPeminjaman'
 import AdminPengembalian from './pages/AdminPengembalian'
 import AdminDaftarPeminjaman from './pages/AdminDaftarPeminjaman'
@@ -158,6 +161,24 @@ export default function App() {
         element={
           <AdminRoute>
             <AdminEntriAnggota />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin Sirkulasi Reservasi Buku Routes */}
+      <Route
+        path="/admin/sirkulasi/reservasi"
+        element={
+          <AdminRoute>
+            <AdminReservasi />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/reservasi"
+        element={
+          <AdminRoute>
+            <AdminReservasi />
           </AdminRoute>
         }
       />
@@ -334,6 +355,24 @@ export default function App() {
         element={
           <PrivateRoute>
             <Profile />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Layanan Mandiri Anggota */}
+      <Route
+        path="/reservasi-saya"
+        element={
+          <PrivateRoute>
+            <ReservasiSaya />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/pinjaman-saya"
+        element={
+          <PrivateRoute>
+            <PinjamanSaya />
           </PrivateRoute>
         }
       />
