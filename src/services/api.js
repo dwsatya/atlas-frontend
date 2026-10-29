@@ -2182,3 +2182,11 @@ export function fetchFavoriteIds() {
 export function toggleFavorite(catalogId) {
   return memberRequest(`/favorites/${catalogId}/toggle`, { method: 'POST' }, 'Gagal memperbarui buku favorit')
 }
+
+export async function fetchOpacStats() {
+  const response = await fetch(`${API_BASE_URL}/opac/stats`, { headers: { Accept: 'application/json' } })
+  if (!response.ok) {
+    throw new Error(`Gagal mengambil statistik koleksi (Status: ${response.status})`)
+  }
+  return response.json()
+}
