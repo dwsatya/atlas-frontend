@@ -10,6 +10,7 @@ import {
   Users,
   AlertTriangle,
   ArrowUpRight,
+  BookMarked,
   CornerDownLeft,
   ClipboardList,
   KeyRound,
@@ -76,6 +77,11 @@ export default function AdminSidebar({ isOpen, onClose }) {
     {
       title: 'LAYANAN SIRKULASI',
       items: [
+        {
+          name: 'Reservasi',
+          path: '/admin/sirkulasi/reservasi',
+          icon: BookMarked,
+        },
         {
           name: 'Peminjaman',
           path: '/admin/sirkulasi/peminjaman',
@@ -173,6 +179,9 @@ export default function AdminSidebar({ isOpen, onClose }) {
         currentPath === '/admin/keranjang-anggota-bermasalah' ||
         currentPath === '/keranjang-bermasalah'
       )
+    }
+    if (itemPath === '/admin/sirkulasi/reservasi') {
+      return currentPath === '/admin/sirkulasi/reservasi' || currentPath === '/admin/reservasi'
     }
     if (itemPath === '/admin/sirkulasi/peminjaman') {
       return (
