@@ -10,39 +10,33 @@ export default function WhatsAppNoticeModal({ isOpen, onClose, cart }) {
   const rawPhone = member.phone_number || ''
   const cleanPhone = rawPhone.replace(/\D/g, '').replace(/^0/, '62').replace(/^\+/, '')
 
-  const fine = Number(cart.fine_amount || 0)
-  const paid = Number(cart.paid_amount || 0)
-  const remaining = Math.max(0, fine - paid)
-
   const defaultMessage = useMemo(() => {
     const memberName = member.name || 'Bapak/Ibu/Sdr(i)'
     const memberNo = member.member_no || '-'
     const title = cart.item_title || 'Koleksi Perpustakaan'
     const problem = cart.problem_type_label || cart.problem_type
-    const status = cart.action_status_label || cart.action_status
-    const remainingText = remaining > 0 ? `Rp ${remaining.toLocaleString('id-ID')}` : 'Tidak ada tagihan finansial'
+    const notes = cart.action_notes || cart.description || 'Harap menyelesaikan administrasi koleksi di loket sirkulasi.'
 
     return `*LAYANAN SIRKULASI & TERTIB ANGGOTA DAPD KABUPATEN BULELENG*
-Salam Literasi 📚
+Salam Literasi,
 
 Yth. *${memberName}* (No. Anggota: *${memberNo}*),
 
-Kami menginformasikan bahwa terdapat catatan pengawasan sirkulasi pada akun keanggotaan Anda di Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng:
+Kami menginformasikan bahwa terdapat catatan administrasi sirkulasi pada akun keanggotaan Anda di Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng:
 
-📋 *Rincian Kasus Sirkulasi:*
+*Rincian Kasus Sirkulasi:*
 • Jenis Permasalahan: *${problem}*
 • Koleksi Terkait: *"${title}"*
-• Eksemplar / Panggil: ${cart.item_barcode || '-'} (${cart.item_call_number || '-'})
-• Status Tindakan: *${status}*
-• Sisa Kewajiban/Tagihan: *${remainingText}*
-• Keterangan Petugas: ${cart.action_notes || cart.description || 'Harap konfirmasi ke loket sirkulasi.'}
+• Eksemplar / No. Panggil: ${cart.item_barcode || '-'} (${cart.item_call_number || '-'})
+• Status Tindakan: *Akses Dibekukan (Hak Pinjam Ditangguhkan)*
+• Catatan Petugas: ${notes}
 
-Demi kenyamanan peminjaman berikutnya, mohon kehadiran Anda di Gedung Perpustakaan Daerah Kab. Buleleng (Jl. Veteran No. 23, Singaraja) pada jam kerja untuk menyelesaikan administrasi terkait.
+Demi tertib administrasi dan pemulihan hak peminjaman koleksi, mohon kehadiran Anda di Gedung Perpustakaan Daerah Kab. Buleleng (Jl. Veteran No. 23, Singaraja) pada jam kerja untuk menyelesaikan pengembalian atau penggantian koleksi terkait.
 
-Terima kasih atas kerja sama dan partisipasinya.
+Terima kasih atas kerja sama dan perhatiannya.
 
 _Pustakawan Pelaksana Sirkulasi DAPD Kab. Buleleng_`
-  }, [member, cart, remaining])
+  }, [member, cart])
 
   const [messageText, setMessageText] = useState(defaultMessage)
 
@@ -102,7 +96,7 @@ _Pustakawan Pelaksana Sirkulasi DAPD Kab. Buleleng_`
           {/* Textarea Editor */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-700">Pesan Pengingat / Tagihan:</label>
+              <label className="font-bold text-slate-700">Pesan Pemberitahuan WhatsApp:</label>
               <button
                 type="button"
                 onClick={handleCopy}

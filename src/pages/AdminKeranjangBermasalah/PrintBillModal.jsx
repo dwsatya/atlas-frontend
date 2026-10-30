@@ -1,13 +1,10 @@
-import { Printer, X, Download, ShieldCheck } from 'lucide-react'
+import { Printer, X, Download, ShieldCheck, AlertTriangle } from 'lucide-react'
 import logo from '../../assets/Logo.png'
 
 export default function PrintBillModal({ isOpen, onClose, cart }) {
   if (!isOpen || !cart) return null
 
   const member = cart.member || {}
-  const fine = Number(cart.fine_amount || 0)
-  const paid = Number(cart.paid_amount || 0)
-  const remaining = Math.max(0, fine - paid)
 
   const handlePrint = () => {
     window.print()
@@ -30,7 +27,7 @@ export default function PrintBillModal({ isOpen, onClose, cart }) {
             </div>
             <div>
               <h3 className="text-sm font-bold text-white tracking-wide">
-                Surat Tagihan &amp; Berita Acara Pelanggaran
+                Berita Acara Pembekuan Akses Sirkulasi
               </h3>
               <p className="text-[11px] text-[#A5C0EE]">
                 Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng
@@ -82,7 +79,7 @@ export default function PrintBillModal({ isOpen, onClose, cart }) {
           {/* Judul Surat */}
           <div className="text-center space-y-1 py-1">
             <h3 className="text-sm font-bold uppercase underline tracking-wider text-slate-900">
-              SURAT PEMBERITAHUAN TERTUNDA &amp; TAGIHAN SIRKULASI
+              BERITA ACARA PEMBEKUAN AKSES PINJAM SIRKULASI
             </h3>
             <p className="text-[11px] font-mono text-slate-500">
               Nomor: 041.2 / {cart.id ? String(cart.id).padStart(4, '0') : '0028'} / DAPD-BLL / {new Date().getFullYear()}
@@ -126,7 +123,7 @@ export default function PrintBillModal({ isOpen, onClose, cart }) {
                   <th className="border border-slate-300 p-2 text-left">Jenis Permasalahan</th>
                   <th className="border border-slate-300 p-2 text-left">Judul Koleksi / Kasus</th>
                   <th className="border border-slate-300 p-2 text-center">Eksemplar / Panggil</th>
-                  <th className="border border-slate-300 p-2 text-right">Kewajiban Biaya</th>
+                  <th className="border border-slate-300 p-2 text-center">Tindakan Wajib Pemustaka</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,26 +139,8 @@ export default function PrintBillModal({ isOpen, onClose, cart }) {
                     {cart.item_barcode || '-'}<br />
                     <span className="text-[10px] text-slate-400">{cart.item_call_number || '-'}</span>
                   </td>
-                  <td className="border border-slate-300 p-2 text-right font-bold text-slate-900 font-mono">
-                    Rp {fine.toLocaleString('id-ID')}
-                  </td>
-                </tr>
-                {paid > 0 && (
-                  <tr>
-                    <td colSpan="3" className="border border-slate-300 p-2 text-right font-semibold text-emerald-700">
-                      Telah Terbayar / Cicilan
-                    </td>
-                    <td className="border border-slate-300 p-2 text-right font-bold text-emerald-700 font-mono">
-                      - Rp {paid.toLocaleString('id-ID')}
-                    </td>
-                  </tr>
-                )}
-                <tr className="bg-slate-50">
-                  <td colSpan="3" className="border border-slate-300 p-2 text-right font-bold text-slate-900">
-                    Sisa Kewajiban Tagihan
-                  </td>
-                  <td className="border border-slate-300 p-2 text-right font-extrabold text-rose-700 text-sm font-mono">
-                    Rp {remaining.toLocaleString('id-ID')}
+                  <td className="border border-slate-300 p-2 text-center font-semibold text-slate-900">
+                    Pengembalian / Penggantian Buku Fisik
                   </td>
                 </tr>
               </tbody>
@@ -169,12 +148,13 @@ export default function PrintBillModal({ isOpen, onClose, cart }) {
           </div>
 
           {/* Ketentuan Tindak Lanjut */}
-          <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 space-y-1 text-[11px]">
+          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/70 text-rose-950 space-y-1 text-[11px]">
             <p className="font-bold flex items-center gap-1.5">
-              <span>⚠️</span> Status Tindakan Saat Ini: <span className="underline">{cart.action_status_label || cart.action_status}</span>
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Status Tindakan: <span className="underline font-bold">AKSES DIBEKUKAN</span></span>
             </p>
             <p className="leading-relaxed">
-              Hak peminjaman koleksi sirkulasi ditangguhkan sementara hingga kewajiban pengembalian, perbaikan, atau ganti rugi diselesaikan di loket pelayanan DAPD Buleleng.
+              Hak peminjaman koleksi sirkulasi ditangguhkan sementara hingga kewajiban pengembalian atau penggantian fisik buku diselesaikan di loket pelayanan Dinas Arsip dan Perpustakaan Daerah Kabupaten Buleleng. Tidak ada sanksi denda uang tunai.
             </p>
           </div>
 

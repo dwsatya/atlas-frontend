@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
   Download,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -28,6 +29,7 @@ import {
   Copy,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   Phone,
   MapPin,
   Calendar,
@@ -37,11 +39,13 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
+import { Link } from 'react-router-dom'
 import DeleteConfirmModal from './DeleteConfirmModal'
 import MemberDetailModal from './MemberDetailModal'
 import MemberPrintKtaModal from './MemberPrintKtaModal'
 import WebcamCaptureModal from './WebcamCaptureModal'
 import ImportMemberModal from './ImportMemberModal'
+import AddCaseModal from '../AdminKeranjangBermasalah/AddCaseModal'
 import {
   fetchAdminMembers,
   createAdminMember,
@@ -171,14 +175,14 @@ function getMemberWaUrl(member) {
   const emailInfo = member.email ? member.email : '-'
 
   const msg = `*LAYANAN SIRKULASI & KEANGGOTAAN DAPD KAB. BULELENG*
-Salam Literasi 📚
+Salam Literasi,
 
 Yth. *${memberName}*,
 Nomor Anggota: *${memberNo}*
 
 Pendaftaran keanggotaan Perpustakaan Daerah Kabupaten Buleleng Anda telah aktif di sistem sirkulasi ATLAS.
 
-📋 *Rincian Data Keanggotaan:*
+*Rincian Data Keanggotaan:*
 • No. Anggota: *${memberNo}*
 • Nama Lengkap: *${memberName}*
 • Jenis Kelamin: ${member.gender === 'P' ? 'Perempuan (P)' : 'Laki-Laki (L)'}
@@ -190,7 +194,7 @@ Pendaftaran keanggotaan Perpustakaan Daerah Kabupaten Buleleng Anda telah aktif 
 
 Kartu Tanda Anggota (KTA) Anda kini dapat digunakan untuk meminjam buku fisik di perpustakaan serta mengakses fasilitas baca di tempat.
 
-📍 *Dinas Arsip dan Perpustakaan Daerah Kab. Buleleng*
+*Dinas Arsip dan Perpustakaan Daerah Kab. Buleleng*
 Jl. Veteran No. 23, Singaraja, Bali
 Website: https://bulelengkab.go.id
 
@@ -253,6 +257,9 @@ export default function AdminEntriAnggota() {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
   const [selectedMemberForPrint, setSelectedMemberForPrint] = useState(null)
 
+  const [isProblemModalOpen, setIsProblemModalOpen] = useState(false)
+  const [memberForProblemModal, setMemberForProblemModal] = useState(null)
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState(null)
   const [isBulkDelete, setIsBulkDelete] = useState(false)
@@ -293,7 +300,7 @@ export default function AdminEntriAnggota() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterJobCategory, setFilterJobCategory] = useState('all')
   const [filterLocation, setFilterLocation] = useState('all')
-  const [filterValidity, setFilterValidity] = useState('all')
+  const [filterValidity, setFilterValidity] = useState('aktif')
 
   // Table & Selection States
   const [members, setMembers] = useState(INITIAL_FALLBACK_MEMBERS)
@@ -442,9 +449,19 @@ export default function AdminEntriAnggota() {
         if (filterJobCategory === 'MAHASISWA' && !cat.includes('MAHASISWA')) return false
       }
 
+      // Filter status keanggotaan (Default 'aktif': sembunyikan anggota yang masuk Keranjang Bermasalah)
+      const isProb = Boolean(
+        m.is_problematic ||
+        String(m.status || '').toLowerCase().includes('dibekukan') ||
+        String(m.status || '').toLowerCase().includes('bermasalah') ||
+        (m.active_problems_count > 0)
+      )
+      if (filterValidity === 'aktif' && isProb) return false
+      if (filterValidity === 'bermasalah' && !isProb) return false
+
       return true
     })
-  }, [members, debouncedSearch, filterJobCategory])
+  }, [members, debouncedSearch, filterJobCategory, filterValidity])
 
 
   // Helper to format phone number as: 812-3456-7893 (strictly digits only)
@@ -898,6 +915,25 @@ export default function AdminEntriAnggota() {
     } finally {
       setSavingLoading(false)
     }
+  }
+
+  // Keranjang Bermasalah Trigger: Opens Add Case Modal with member pre-selected
+  const handleOpenProblemModal = (member) => {
+    setMemberForProblemModal(member)
+    setIsProblemModalOpen(true)
+  }
+
+  // Callback when member is moved to problem cart: instantly remove from active list
+  const handleProblemSuccess = (memberId, memberName) => {
+    setMembers((prev) => prev.filter((m) => m.id !== memberId))
+    setSelectedIds((prev) => prev.filter((id) => id !== memberId))
+    setStats((prev) => ({
+      ...prev,
+      total_members: Math.max(0, (prev.total_members || 1) - 1),
+      problem_members_count: (prev.problem_members_count || 0) + 1,
+    }))
+    showToast(`Anggota ${memberName || ''} berhasil dipindahkan ke Keranjang Bermasalah dan dikeluarkan dari daftar aktif.`, 'warning')
+    loadMembers()
   }
 
   // Delete Action Trigger: Opens Delete Confirmation Modal
@@ -1868,10 +1904,10 @@ export default function AdminEntriAnggota() {
               </div>
             </div>
 
-            {/* Masa Berlaku */}
+            {/* Status Keanggotaan & Kasus */}
             <div className="space-y-1">
               <label className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                Masa Berlaku
+                Status Keanggotaan
               </label>
               <div className="relative">
                 <select
@@ -1882,9 +1918,9 @@ export default function AdminEntriAnggota() {
                   }}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:border-[#0B2256] focus:ring-2 focus:ring-[#0B2256]/15 appearance-none cursor-pointer"
                 >
-                  <option value="all">Semua Masa Berlaku</option>
-                  <option value="Aktif Bebas Pustaka">Aktif (Masih Berlaku)</option>
-                  <option value="Kedaluwarsa">Kedaluwarsa / Expired</option>
+                  <option value="aktif">Anggota Aktif Bebas Pustaka (Default)</option>
+                  <option value="all">Semua Anggota (Termasuk Bermasalah)</option>
+                  <option value="bermasalah">Khusus Anggota Bermasalah</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -1920,13 +1956,28 @@ export default function AdminEntriAnggota() {
                   setDebouncedSearch('')
                   setFilterJobCategory('all')
                   setFilterLocation('all')
-                  setFilterValidity('all')
+                  setFilterValidity('aktif')
                 }}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                 <span>Reset</span>
               </button>
+
+              {/* Tombol Pintas Keranjang Bermasalah yang Jelas & Efektif */}
+              <Link
+                to="/admin/keranjang-bermasalah"
+                className="px-3.5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
+                title="Buka Keranjang Bermasalah untuk melihat/menyelesaikan anggota yang disanksi"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                <span>Keranjang Bermasalah</span>
+                {stats?.problem_members_count > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-bold">
+                    {stats.problem_members_count}
+                  </span>
+                )}
+              </Link>
 
               <span className="text-xs font-medium text-slate-500 pl-2 whitespace-nowrap">
                 {filteredMembers.length} dari {stats.total_members.toLocaleString('id-ID')}
@@ -1940,7 +1991,7 @@ export default function AdminEntriAnggota() {
           <div className="bg-[#EBF3FE] border border-[#C5DCFA] rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
             <div className="flex items-center gap-2.5">
               <span className="w-5 h-5 rounded bg-[#0B2256] text-white text-xs font-bold flex items-center justify-center">
-                ✓
+                <Check className="w-3.5 h-3.5" />
               </span>
               <span className="text-xs font-bold text-[#0B2256]">
                 {selectedIds.length} Anggota Dipilih
@@ -2122,15 +2173,42 @@ export default function AdminEntriAnggota() {
 
                         {/* STATUS KEANGGOTAAN */}
                         <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#E8F8F4] text-[#0D9478] border border-[#B4EFE3]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#0D9478]" />
-                            {member.status || 'Aktif Bebas Pustaka'}
-                          </span>
+                          {member.is_problematic || String(member.status || '').toLowerCase().includes('dibekukan') || (member.active_problems_count > 0) ? (
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                                Akses Dibekukan
+                              </span>
+                              <Link
+                                to={`/admin/keranjang-bermasalah?search=${encodeURIComponent(member.member_no || member.name)}`}
+                                className="text-[10px] text-rose-700 hover:text-rose-900 hover:underline flex items-center gap-1 font-semibold"
+                                title="Buka kasus sirkulasi di Keranjang Bermasalah"
+                              >
+                                <span>Buka Kasus</span>
+                                <ExternalLink className="w-2.5 h-2.5" />
+                              </Link>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#E8F8F4] text-[#0D9478] border border-[#B4EFE3]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0D9478]" />
+                              {member.status || 'Aktif Bebas Pustaka'}
+                            </span>
+                          )}
                         </td>
 
                         {/* AKSI */}
                         <td className="py-4 px-4 text-center">
                           <div className="flex items-center justify-center gap-1 text-slate-500">
+                            {/* Tombol Pindahkan ke Keranjang Bermasalah (Mudah Dipahami & Praktis) */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenProblemModal(member)}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition-all border border-rose-200/80 cursor-pointer"
+                              title="Pindahkan Anggota ke Keranjang Bermasalah"
+                            >
+                              <ShieldAlert className="w-4 h-4" />
+                            </button>
+
                             {/* Detail Button */}
                             <button
                               type="button"
@@ -2293,6 +2371,18 @@ export default function AdminEntriAnggota() {
           setSelectedMemberForPrint(m)
           setIsPrintModalOpen(true)
         }}
+        onReportProblem={(m) => handleOpenProblemModal(m)}
+      />
+
+      {/* Modal Masukkan Anggota ke Keranjang Bermasalah */}
+      <AddCaseModal
+        isOpen={isProblemModalOpen}
+        onClose={() => {
+          setIsProblemModalOpen(false)
+          setMemberForProblemModal(null)
+        }}
+        initialMember={memberForProblemModal}
+        onSuccess={handleProblemSuccess}
       />
 
       {/* KTA Print & Download Modal */}

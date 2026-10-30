@@ -1,5 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Check,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+  ShieldAlert,
+  ShieldCheck,
+  Info,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { fetchProfile, updateProfile, fetchMyProblemHistory } from '../../services/api'
 import logoatlas from '../../assets/logoatlas.png'
@@ -38,6 +49,14 @@ export default function Profile() {
   const [profileData, setProfileData] = useState(user || null)
   const [problemData, setProblemData] = useState(null)
   const [showResolvedCases, setShowResolvedCases] = useState(false)
+
+  const isProblematic = Boolean(
+    profileData?.is_problematic ||
+    String(profileData?.status || '').toLowerCase().includes('dibekukan') ||
+    String(profileData?.status || '').toLowerCase().includes('bermasalah') ||
+    problemData?.summary?.is_restricted ||
+    (problemData?.summary?.active_cases_count > 0)
+  )
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showPrintModal, setShowPrintModal] = useState(false)
@@ -342,6 +361,59 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Status Keanggotaan Terpadu (Keranjang Bermasalah Integration) */}
+        {isProblematic ? (
+          <div className="p-4 sm:p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-sm text-rose-950">
+                    Status Akun: Akses Peminjaman Dibekukan
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-200 text-rose-800 text-[10px] font-bold uppercase tracking-wider">
+                    Keranjang Bermasalah
+                  </span>
+                </div>
+                <p className="text-xs text-rose-800 mt-0.5 leading-relaxed">
+                  Akun Anda sedang ditangguhkan karena memiliki catatan kasus/pelanggaran sirkulasi aktif. Silakan datang ke loket Sirkulasi DAPD Kab. Buleleng untuk menyelesaikan status keanggotaan.
+                </p>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shrink-0 self-start sm:self-auto shadow-xs">
+              Akses Dibekukan
+            </span>
+          </div>
+        ) : (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <span className="font-bold text-xs text-emerald-950">
+                  Status Akun: Aktif Bebas Pustaka
+                </span>
+                <p className="text-[11px] text-emerald-700">
+                  Tidak ada catatan pelanggaran atau penangguhan hak pinjam. Anda dapat meminjam buku secara normal.
+                </p>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shrink-0 self-start sm:self-auto">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Aktif Bebas Pustaka
+            </span>
+          </div>
+        )}
+
         {/* 3. Kartu Tanda Anggota Digital (Digital Library Card) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT: Kartu Anggota Visual & Interaktif KTA (5 cols) */}
@@ -427,15 +499,15 @@ export default function Profile() {
               {saveSuccess && !isEditing && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">✓</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{saveSuccess}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSaveSuccess(null)}
-                    className="text-emerald-700 hover:text-emerald-900 font-bold ml-2 cursor-pointer"
+                    className="p-1 rounded-lg text-emerald-700 hover:text-emerald-900 font-bold ml-2 cursor-pointer"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -443,7 +515,7 @@ export default function Profile() {
               {/* Banner Notifikasi Error */}
               {saveError && isEditing && (
                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
-                  <span className="text-base">⚠️</span>
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                   <span>{saveError}</span>
                 </div>
               )}
@@ -778,16 +850,20 @@ export default function Profile() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 font-medium">
                 <div className="flex items-center gap-2 text-emerald-800">
-                  <span>✓</span> <span>Peminjaman buku sirkulasi hingga 3 eksemplar</span>
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Peminjaman buku sirkulasi hingga 3 eksemplar</span>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-800">
-                  <span>✓</span> <span>Akses baca & reservasi koleksi di tempat</span>
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Akses baca & reservasi koleksi di tempat</span>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-800">
-                  <span>✓</span> <span>Layanan mandiri perpanjangan masa pinjam</span>
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Layanan mandiri perpanjangan masa pinjam</span>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-800">
-                  <span>✓</span> <span>Penyimpanan barang & loker pengunjung</span>
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Penyimpanan barang & loker pengunjung</span>
                 </div>
               </div>
             </div>
@@ -833,7 +909,7 @@ export default function Profile() {
                       <p className="text-xs text-slate-500">
                         {problemData?.summary?.is_restricted
                           ? 'Perhatian: Terdapat tanggungan koleksi atau sanksi sirkulasi aktif pada akun Anda'
-                          : 'Status peminjaman aktif bebas pustaka (tidak ada denda/tunggakan sirkulasi)'}
+                          : 'Status peminjaman aktif bebas pustaka (tidak ada pelanggaran atau tanggungan sirkulasi)'}
                       </p>
                     </div>
                   </div>
@@ -850,30 +926,6 @@ export default function Profile() {
                       : 'Bebas Pustaka Aktif'}
                   </span>
                 </div>
-
-                {/* Ringkasan Denda Jika Ada */}
-                {problemData?.summary?.total_fines > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-                    <div>
-                      <span className="text-slate-400 font-medium block text-[11px]">Total Tagihan Denda / Ganti Rugi</span>
-                      <span className="font-mono font-bold text-slate-800 text-sm">
-                        Rp {Number(problemData.summary.total_fines).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium block text-[11px]">Sudah Dibayar / Dicicil</span>
-                      <span className="font-mono font-bold text-emerald-700 text-sm">
-                        Rp {Number(problemData.summary.total_paid).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium block text-[11px]">Sisa Tanggungan</span>
-                      <span className="font-mono font-extrabold text-rose-700 text-sm">
-                        Rp {Number(problemData.summary.remaining_debt).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Kasus Aktif */}
                 {problemData?.summary?.active_cases_count > 0 ? (
@@ -894,7 +946,7 @@ export default function Profile() {
                                 <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold">
                                   {c.problem_type_label || c.problem_type}
                                 </span>
-                                <span className="font-bold text-slate-900">{c.item_title || '-'}</span>
+                                <span className="font-bold text-slate-900">{c.item_title || 'Kasus Pelanggaran Sirkulasi'}</span>
                               </div>
                               <p className="text-slate-600 text-[11px]">
                                 {c.item_barcode && <span>Eksemplar: <b>{c.item_barcode}</b> • </span>}
@@ -903,7 +955,7 @@ export default function Profile() {
                               </p>
                               {c.action_notes && (
                                 <p className="text-rose-800 font-medium text-[11px]">
-                                  Tindakan: {c.action_notes}
+                                  Tindakan / Sanksi: {c.action_notes}
                                 </p>
                               )}
                             </div>
@@ -912,27 +964,25 @@ export default function Profile() {
                               <span className="inline-block px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[11px] border border-rose-200">
                                 {c.action_status_label || c.action_status}
                               </span>
-                              {c.remaining_debt > 0 && (
-                                <p className="font-mono font-bold text-rose-700 text-xs mt-1">
-                                  Sisa: Rp {Number(c.remaining_debt).toLocaleString('id-ID')}
-                                </p>
-                              )}
                             </div>
                           </div>
                         ))}
                     </div>
 
-                    <p className="text-[11px] text-slate-500 italic bg-amber-50 border border-amber-200 rounded-xl p-3">
-                      ℹ️ Untuk menyelesaikan tanggungan dan memulihkan hak peminjaman, silakan datang langsung ke loket Sirkulasi Gedung Dinas Arsip &amp; Perpustakaan Daerah Kabupaten Buleleng, Jl. Veteran No. 23 Singaraja.
-                    </p>
+                    <div className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">
+                        Untuk menyelesaikan tanggungan dan memulihkan hak peminjaman, silakan datang langsung ke loket Sirkulasi Gedung Dinas Arsip &amp; Perpustakaan Daerah Kabupaten Buleleng, Jl. Veteran No. 23 Singaraja.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-3">
-                    <span className="text-emerald-600 font-bold text-lg">✓</span>
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
                     <div>
                       <p className="font-bold">Akun Anda Dalam Kondisi Baik</p>
                       <p className="text-[11px] text-emerald-800">
-                        Tidak ada denda tertunggak, buku terlambat, atau sanksi sirkulasi. Anda dapat melakukan peminjaman buku seperti biasa.
+                        Tidak ada buku tertahan atau sanksi sirkulasi. Anda dapat melakukan peminjaman buku seperti biasa.
                       </p>
                     </div>
                   </div>
@@ -951,7 +1001,7 @@ export default function Profile() {
                           ? 'Sembunyikan Riwayat Kasus Terdahulu'
                           : `Lihat Riwayat Kasus Terdahulu Yang Telah Diselesaikan (${problemData.summary.resolved_cases_count})`}
                       </span>
-                      <span>{showResolvedCases ? '▲' : '▼'}</span>
+                      {showResolvedCases ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
 
                     {showResolvedCases && (
@@ -974,8 +1024,9 @@ export default function Profile() {
                                   Selesai pada: {c.resolved_at || '-'} • Catatan: {c.resolution_notes || 'Lunas/Selesai'}
                                 </p>
                               </div>
-                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold self-start sm:self-auto">
-                                ✓ Selesai
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold self-start sm:self-auto inline-flex items-center gap-1">
+                                <Check className="w-3 h-3 text-emerald-700" />
+                                <span>Selesai</span>
                               </span>
                             </div>
                           ))}
@@ -1019,7 +1070,7 @@ export default function Profile() {
                 onClick={() => setShowPrintModal(false)}
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
