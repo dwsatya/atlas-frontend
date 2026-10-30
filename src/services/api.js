@@ -2190,3 +2190,88 @@ export async function fetchOpacStats() {
   }
   return response.json()
 }
+
+/**
+ * =========================================================================
+ * ADMIN: IMPORT EXCEL BERTAHAP (DENGAN PROGRESS)
+ * =========================================================================
+ */
+
+const buildApiError = (result, status, fallbackMessage) => {
+  const message =
+    result?.message ||
+    (result?.errors ? Object.values(result.errors).flat()[0] : null) ||
+    `${fallbackMessage} (Status: ${status})`
+  const error = new Error(message)
+  error.status = status
+  error.data = result
+  return error
+}
+
+/**
+ * Tahap 1: unggah & baca file. onUploadProgress(persen 0-100) dipanggil selama file terkirim.
+ */
+export function prepareCatalogImport(file, onUploadProgress) {
+  const token = getAdminToken()
+  const formData = new FormData()
+  formData.append('file', file)
+
+  // XMLHttpRequest dipakai karena fetch belum mendukung progress unggahan
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${API_BASE_URL}/v1/admin/books/import/prepare`)
+    xhr.setRequestHeader('Accept', 'application/json')
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onUploadProgress) {
+        onUploadProgress(Math.round((event.loaded / event.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      let result = null
+      try {
+        result = JSON.parse(xhr.responseText)
+      } catch {
+        result = null
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(result)
+      else reject(buildApiError(result, xhr.status, 'Gagal membaca file Excel'))
+    }
+    xhr.onerror = () => reject(new Error('Koneksi ke server terputus saat mengunggah file.'))
+    xhr.send(formData)
+  })
+}
+
+/**
+ * Tahap 2: simpan satu blok baris ke database.
+ */
+export async function processCatalogImportChunk(importToken, chunk) {
+  const token = getAdminToken()
+  const response = await fetch(`${API_BASE_URL}/v1/admin/books/import/${importToken}/process`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ chunk }),
+  })
+  const result = await response.json().catch(() => null)
+  if (!response.ok) throw buildApiError(result, response.status, 'Gagal menyimpan blok data')
+  return result
+}
+
+/**
+ * Hentikan import: hapus sisa blok yang belum diproses di server.
+ */
+export async function cancelCatalogImport(importToken) {
+  const token = getAdminToken()
+  await fetch(`${API_BASE_URL}/v1/admin/books/import/${importToken}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }).catch(() => null)
+}
