@@ -1,26 +1,13 @@
-import { ChevronRight, LayoutGrid, Lock, LogIn } from 'lucide-react'
+import { ChevronRight, LayoutGrid, Lock } from 'lucide-react'
 import { LAYANAN_MANDIRI_ITEMS, useLayananMandiri } from './layananMandiriItems'
 
 /** Panel dropdown Layanan Mandiri pada Navbar desktop */
 export function LayananMandiriDropdown() {
-  const { isLoggedIn, user, isActive, open, navigate } = useLayananMandiri()
+  const { isLoggedIn, isActive, open } = useLayananMandiri()
 
   return (
-    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 w-[340px] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200 z-50 cursor-default">
+    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 w-[300px] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200 z-50 cursor-default">
       <div className="relative bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-        {/* Panah penunjuk */}
-        <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-[#00255c]" />
-
-        <div className="relative bg-gradient-to-br from-[#00255c] to-[#0a3b85] px-4 py-3.5 text-white">
-          <p className="text-sm font-bold flex items-center gap-1.5">
-            <LayoutGrid className="w-4 h-4 text-white/80" />
-            Layanan Mandiri Anggota
-          </p>
-          <p className="text-[11px] text-white/70 mt-0.5">
-            {isLoggedIn ? `Halo, ${user?.name?.split(' ')[0] || 'Anggota'}! Kelola layanan perpustakaan Anda.` : 'Akses layanan perpustakaan dari mana saja.'}
-          </p>
-        </div>
-
         <div className="p-2">
           {LAYANAN_MANDIRI_ITEMS.map((item) => {
             const Icon = item.icon
@@ -49,20 +36,6 @@ export function LayananMandiriDropdown() {
             )
           })}
         </div>
-
-        {!isLoggedIn && (
-          <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
-            <span className="text-[11px] text-slate-500">Masuk untuk akses layanan anggota</span>
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="px-3 py-1.5 rounded-lg bg-[#002B66] hover:bg-[#001D48] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              Masuk
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )
