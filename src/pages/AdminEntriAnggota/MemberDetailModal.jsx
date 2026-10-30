@@ -15,6 +15,7 @@ import {
   Copy,
   ExternalLink,
   AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
@@ -27,6 +28,7 @@ export default function MemberDetailModal({
   member,
   onEdit,
   onPrintKta,
+  onReportProblem,
 }) {
   const [copied, setCopied] = useState(false)
   const [photoError, setPhotoError] = useState(false)
@@ -54,12 +56,21 @@ export default function MemberDetailModal({
     }
   }, [member])
 
+  const isProblematic = useMemo(() => {
+    if (!member) return false
+    return Boolean(
+      member.is_problematic ||
+      String(member.status || '').toLowerCase().includes('dibekukan') ||
+      String(member.status || '').toLowerCase().includes('bermasalah') ||
+      (problemSummary && problemSummary.active_cases_count > 0)
+    )
+  }, [member, problemSummary])
+
   const formattedValidUntil = useMemo(() => {
     if (!member?.valid_until) return '2031'
     if (typeof member.valid_until === 'string' && (member.valid_until.includes('/') || member.valid_until.includes('-'))) {
       const parts = member.valid_until.split(/[/ -]/)
       if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
-        // DD/MM/YYYY or DD-MM-YYYY
         const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
         if (!isNaN(d.getTime())) {
           return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -86,7 +97,7 @@ export default function MemberDetailModal({
     }
   }
 
-  // Format clean WhatsApp link dengan template pesan resmi
+  // Format clean WhatsApp link
   const rawPhone = member.phone_number || ''
   const cleanPhone = rawPhone.replace(/\D/g, '').replace(/^0/, '62').replace(/^\+/, '')
 
@@ -99,14 +110,14 @@ export default function MemberDetailModal({
     const emailInfo = member.email ? member.email : '-'
 
     return `*LAYANAN SIRKULASI & KEANGGOTAAN DAPD KAB. BULELENG*
-Salam Literasi 📚
+Salam Literasi,
 
 Yth. *${memberName}*,
 Nomor Anggota: *${memberNo}*
 
 Pendaftaran keanggotaan Perpustakaan Daerah Kabupaten Buleleng Anda telah aktif di sistem sirkulasi ATLAS.
 
-📋 *Rincian Data Keanggotaan:*
+*Rincian Data Keanggotaan:*
 • No. Anggota: *${memberNo}*
 • Nama Lengkap: *${memberName}*
 • Jenis Kelamin: ${member.gender === 'P' ? 'Perempuan (P)' : 'Laki-Laki (L)'}
@@ -118,7 +129,7 @@ Pendaftaran keanggotaan Perpustakaan Daerah Kabupaten Buleleng Anda telah aktif 
 
 Kartu Tanda Anggota (KTA) Anda kini dapat digunakan untuk meminjam buku fisik di gedung perpustakaan serta mengakses fasilitas baca di tempat.
 
-📍 *Dinas Arsip dan Perpustakaan Daerah Kab. Buleleng*
+*Dinas Arsip dan Perpustakaan Daerah Kab. Buleleng*
 Jl. Veteran No. 23, Singaraja, Bali
 Website: https://bulelengkab.go.id
 
@@ -210,10 +221,19 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
                 <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${badge.bg}`}>
                   {badge.label}
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {member.status || 'Aktif Bebas Pustaka'}
-                </span>
+
+                {/* Status Keanggotaan Terintegrasi */}
+                {isProblematic ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                    Akses Dibekukan (Bermasalah)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {member.status || 'Aktif Bebas Pustaka'}
+                  </span>
+                )}
               </div>
 
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">
@@ -302,7 +322,7 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
                 {member.email || '-'}
               </p>
               <p className="text-[11px] text-slate-400">
-                {member.email ? 'Email terverifikasi untuk notifikasi' : 'Tidak mencantumkan email (-) '}
+                {member.email ? 'Email resmi anggota' : 'Tidak mencantumkan email (-) '}
               </p>
             </div>
 
@@ -345,19 +365,35 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
 
           {/* Riwayat Permasalahan & Keranjang Bermasalah */}
           <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                 Riwayat Kasus Sirkulasi (Keranjang Bermasalah)
               </span>
-              <Link
-                to="/admin/keranjang-bermasalah"
-                onClick={onClose}
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-              >
-                <span>Buka Keranjang Bermasalah</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </Link>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    onReportProblem?.(member)
+                  }}
+                  className="text-[11px] font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Laporkan anggota ini ke Keranjang Bermasalah"
+                >
+                  <ShieldAlert className="w-3 h-3 text-rose-600" />
+                  <span>+ Masukkan Masalah</span>
+                </button>
+
+                <Link
+                  to={`/admin/keranjang-bermasalah?search=${encodeURIComponent(member.member_no || member.name)}`}
+                  onClick={onClose}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                >
+                  <span>Buka di Keranjang</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </Link>
+              </div>
             </div>
 
             {loadingProblems ? (
@@ -365,22 +401,18 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
             ) : problemHistory.length === 0 ? (
               <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Anggota ini tidak memiliki catatan pelanggaran atau sanksi sirkulasi. Status hak pinjam aktif bebas pustaka.</span>
+                <span>Anggota ini tidak memiliki catatan pelanggaran atau sanksi sirkulasi. Hak peminjaman aktif bebas pustaka.</span>
               </div>
             ) : (
               <div className="space-y-2">
                 {problemHistory.map((p) => {
-                  const fine = Number(p.fine_amount || 0)
-                  const paid = Number(p.paid_amount || 0)
-                  const remaining = Math.max(0, fine - paid)
-
                   return (
                     <div
                       key={p.id}
                       className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
                         p.is_resolved
                           ? 'bg-slate-50 border-slate-200 text-slate-700'
-                          : 'bg-rose-50/60 border-rose-200 text-rose-900'
+                          : 'bg-rose-50/70 border-rose-200 text-rose-900'
                       }`}
                     >
                       <div className="space-y-1">
@@ -394,26 +426,27 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
                           >
                             {p.problem_type_label || p.problem_type}
                           </span>
-                          <span className="font-bold text-xs">{p.item_title || '-'}</span>
+                          <span className="font-bold text-xs">{p.item_title || 'Kasus Tata Tertib Sirkulasi'}</span>
                         </div>
                         <p className="text-[11px] text-slate-600">
                           {p.item_barcode && <span>Eksemplar: {p.item_barcode} • </span>}
-                          <span>Status: <b>{p.action_status_label || p.action_status}</b> ({p.action_notes || '-'})</span>
+                          <span>Tindakan: <b>{p.action_status_label || p.action_status}</b> ({p.action_notes || 'Hak pinjam ditangguhkan'})</span>
                         </p>
                       </div>
 
                       <div className="text-right shrink-0">
-                        {fine > 0 && (
-                          <p className="font-mono font-bold text-xs">
-                            {remaining > 0 ? (
-                              <span className="text-rose-700">Sisa: Rp {remaining.toLocaleString('id-ID')}</span>
-                            ) : (
-                              <span className="text-emerald-700">Lunas</span>
-                            )}
-                          </p>
-                        )}
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          {p.is_resolved ? '✓ Selesai' : '⚠️ Aktif Ditangguhkan'}
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${p.is_resolved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}`}>
+                          {p.is_resolved ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Kasus Selesai</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Sanksi Aktif</span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -429,33 +462,48 @@ _Terima kasih atas partisipasi Anda dalam gerakan gemar membaca Buleleng._`
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-white transition-all"
+            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-white transition-all cursor-pointer"
           >
             Tutup
           </button>
 
           <div className="flex items-center gap-2.5">
+            {/* Tombol Masukkan ke Keranjang Bermasalah */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                onReportProblem?.(member)
+              }}
+              className="px-4 py-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+              title="Masukkan anggota ini ke Keranjang Bermasalah"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+              <span>Masuk Keranjang Bermasalah</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 onClose()
                 if (onEdit) onEdit(member)
               }}
-              className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all"
+              className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
             >
               <Edit className="w-3.5 h-3.5 text-blue-600" />
               Edit Data
             </button>
+
             <button
               type="button"
               onClick={() => {
                 onClose()
                 if (onPrintKta) onPrintKta(member)
               }}
-              className="px-4.5 py-2 rounded-xl bg-[#0B2256] hover:bg-[#112d6e] text-white text-xs font-bold shadow-md shadow-blue-900/20 flex items-center gap-1.5 transition-all"
+              className="px-4.5 py-2 rounded-xl bg-[#0B2256] hover:bg-[#112d6e] text-white text-xs font-bold shadow-md shadow-blue-900/20 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              Cetak Kartu Anggota (KTA)
+              Cetak KTA
             </button>
           </div>
         </div>

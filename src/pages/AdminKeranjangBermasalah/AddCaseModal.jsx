@@ -6,84 +6,93 @@ import {
   CheckCircle2,
   AlertTriangle,
   BookOpen,
-  DollarSign,
-  UserCheck,
   Building,
   Phone,
+  ShieldAlert,
+  ArrowRight,
+  BookX,
+  Clock,
+  Ban,
+  Info,
 } from 'lucide-react'
 import { fetchAdminMembers, createProblemCart } from '../../services/api'
 
-export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
+export default function AddCaseModal({ isOpen, onClose, onSuccess, initialMember = null }) {
   const [memberSearch, setMemberSearch] = useState('')
   const [membersList, setMembersList] = useState([])
-  const [selectedMember, setSelectedMember] = useState(null)
+  const [selectedMember, setSelectedMember] = useState(initialMember)
   const [isSearchingMember, setIsSearchingMember] = useState(false)
 
-  // Form states
+  // Form states (Kebijakan: Tidak ada denda uang)
   const [problemType, setProblemType] = useState('BUKU_HILANG')
   const [itemTitle, setItemTitle] = useState('')
   const [itemBarcode, setItemBarcode] = useState('')
-  const [itemCallNumber, setItemCallNumber] = useState('')
-  const [fineAmount, setFineAmount] = useState('')
-  const [paidAmount, setPaidAmount] = useState('')
-  const [handledBy, setHandledBy] = useState('Ridwan Surasta')
+  const [handledBy, setHandledBy] = useState('Petugas Sirkulasi')
   const [actionStatus, setActionStatus] = useState('AKSES_DIBEKUKAN')
-  const [actionNotes, setActionNotes] = useState('Menunggu buku pengganti')
-  const [lateDurationText, setLateDurationText] = useState('Perlu Tindak Lanjut')
+  const [actionNotes, setActionNotes] = useState('Akses pinjam dibekukan sementara')
   const [description, setDescription] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Reset when open
+  // Reset / Populate when modal opens
   useEffect(() => {
     if (isOpen) {
       setMemberSearch('')
-      setSelectedMember(null)
+      setSelectedMember(initialMember || null)
       setProblemType('BUKU_HILANG')
       setItemTitle('')
       setItemBarcode('')
-      setItemCallNumber('')
-      setFineAmount('')
-      setPaidAmount('')
-      setHandledBy('Ridwan Surasta')
+      setHandledBy('Petugas Sirkulasi')
       setActionStatus('AKSES_DIBEKUKAN')
-      setActionNotes('Menunggu buku pengganti')
-      setLateDurationText('Perlu Tindak Lanjut')
+      setActionNotes('Akses pinjam dibekukan sementara')
       setDescription('')
       setError(null)
-      loadInitialMembers()
+      if (!initialMember) {
+        loadInitialMembers()
+      }
     }
-  }, [isOpen])
+  }, [isOpen, initialMember])
 
-  // Update default action notes when problemType changes
-  const handleProblemTypeChange = (val) => {
-    setProblemType(val)
-    if (val === 'BUKU_HILANG') {
-      setActionStatus('AKSES_DIBEKUKAN')
-      setActionNotes('Menunggu buku pengganti')
-      setLateDurationText('Buku Hilang')
-    } else if (val === 'TELAT') {
-      setActionStatus('PERINGATAN_2')
-      setActionNotes('Konfirmasi pengembalian tertunda')
-      setLateDurationText('Terlambat Pengembalian')
-    } else if (val === 'DENDA_MENUMPUK') {
-      setActionStatus('DALAM_MEDIASI')
-      setActionNotes('Belum Lunas Kasir')
-      setLateDurationText('Tertunggak Kasir')
-    } else if (val === 'KOLEKSI_RUSAK') {
-      setActionStatus('AKSES_DIBEKUKAN')
-      setActionNotes('Sanksi: Tidak Boleh Pinjam')
-      setLateDurationText('Buku Disita Bag. Sirkulasi')
-    } else if (val === 'ANOMALI_IDENTITAS') {
-      setActionStatus('MENUNGGU_KONFIRMASI')
-      setActionNotes('Wajib hadir langsung ke DAPD')
-      setLateDurationText('Verifikasi Berkas KTP')
-    } else {
-      setActionStatus('PERINGATAN_1')
-      setActionNotes('Peringatan tata tertib')
-      setLateDurationText('Teguran Perpustakaan')
-    }
+  const problemOptions = [
+    {
+      id: 'BUKU_HILANG',
+      label: 'Buku Hilang',
+      desc: 'Koleksi hilang saat dipinjam, menunggu buku pengganti',
+      Icon: BookX,
+      iconColor: 'text-rose-600',
+      defaultNotes: 'Menunggu buku pengganti dari pemustaka',
+    },
+    {
+      id: 'TELAT',
+      label: 'Keterlambatan Pengembalian',
+      desc: 'Buku melewati batas waktu pinjam dan belum dikembalikan',
+      Icon: Clock,
+      iconColor: 'text-amber-600',
+      defaultNotes: 'Terlambat mengembalikan koleksi perpustakaan',
+    },
+    {
+      id: 'KOLEKSI_RUSAK',
+      label: 'Koleksi Rusak / Cacat',
+      desc: 'Buku robek, terkena air, atau halaman hilang',
+      Icon: AlertTriangle,
+      iconColor: 'text-orange-600',
+      defaultNotes: 'Koleksi rusak saat dipinjam, hak pinjam ditangguhkan',
+    },
+    {
+      id: 'LAINNYA',
+      label: 'Pelanggaran Tata Tertib',
+      desc: 'Pelanggaran aturan sirkulasi atau anomali identitas',
+      Icon: Ban,
+      iconColor: 'text-slate-600',
+      defaultNotes: 'Pelanggaran tata tertib perpustakaan',
+    },
+  ]
+
+  const handleSelectProblemType = (id, defNotes) => {
+    setProblemType(id)
+    setActionStatus('AKSES_DIBEKUKAN')
+    setActionNotes(defNotes)
   }
 
   const loadInitialMembers = async () => {
@@ -121,7 +130,7 @@ export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
     setError(null)
 
     if (!selectedMember) {
-      setError('Pilih salah satu anggota terdaftar dari daftar di bawah.')
+      setError('Pilih salah satu anggota perpustakaan yang bermasalah.')
       return
     }
 
@@ -132,19 +141,19 @@ export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
         problem_type: problemType,
         item_title: itemTitle.trim() || undefined,
         item_barcode: itemBarcode.trim() || undefined,
-        item_call_number: itemCallNumber.trim() || undefined,
-        fine_amount: fineAmount ? parseFloat(fineAmount) : 0,
-        paid_amount: paidAmount ? parseFloat(paidAmount) : 0,
+        fine_amount: 0, // Tidak ada denda uang di perpustakaan
+        paid_amount: 0,
         handled_by: handledBy.trim() || 'Petugas Sirkulasi',
         action_status: actionStatus,
         action_notes: actionNotes.trim() || undefined,
-        late_duration_text: lateDurationText.trim() || 'Perlu Tindak Lanjut',
+        late_duration_text: 'Perlu Tindak Lanjut',
         description: description.trim() || undefined,
         reported_date: new Date().toISOString().slice(0, 10),
       }
 
       await createProblemCart(payload)
-      onSuccess?.('Kasus anggota bermasalah berhasil ditambahkan!')
+      // Pass ID & Name to callback agar entri anggota langsung menghapus baris anggota tersebut
+      onSuccess?.(selectedMember.id, selectedMember.name)
       onClose()
     } catch (err) {
       setError(err.message || 'Gagal menyimpan kasus permasalahan anggota.')
@@ -157,31 +166,31 @@ export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="px-6 py-4 bg-[#0B2256] text-white flex items-center justify-between">
+      <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Header Bersih & Tegas */}
+        <div className="px-6 py-4.5 bg-[#0B2256] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15">
-              <UserPlus className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-rose-600/90 text-white flex items-center justify-center border border-white/20 shadow-xs">
+              <ShieldAlert className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white tracking-wide">
-                Masukkan Anggota ke Keranjang Bermasalah
+                Pindahkan ke Keranjang Bermasalah
               </h3>
               <p className="text-[11px] text-[#A5C0EE]">
-                Pencatatan kasus penangguhan hak pinjam &amp; pelanggaran sirkulasi
+                Anggota akan langsung dikeluarkan dari daftar aktif sirkulasi
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
+        {/* Body Ringkas & Efisien */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
@@ -190,224 +199,163 @@ export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* 1. Pilih Anggota Terdaftar */}
-          <div className="space-y-2">
-            <label className="font-bold text-slate-800 flex items-center justify-between">
-              <span>1. Pilih Anggota Terdaftar (Wajib) *</span>
-              {selectedMember && (
-                <span className="text-emerald-700 font-normal flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Anggota Dipilih
-                </span>
-              )}
-            </label>
+          {/* 1. Profil Anggota yang Dipindahkan */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              1. Anggota yang Bermasalah
+            </span>
 
-            {/* Input Cari Anggota */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={memberSearch}
-                onChange={handleSearchMembers}
-                placeholder="Cari nama, no. anggota, atau no WhatsApp..."
-                className="w-full pl-9.5 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] focus:border-transparent outline-none"
-              />
-            </div>
-
-            {/* Selected Member Preview Card */}
             {selectedMember ? (
-              <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
-                    {selectedMember.name.charAt(0)}
+                  <div className="w-9 h-9 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                    {selectedMember.name?.charAt(0) || 'A'}
                   </div>
                   <div>
                     <p className="font-bold text-slate-900 text-xs">{selectedMember.name}</p>
-                    <p className="text-[11px] text-blue-700 font-mono">
-                      {selectedMember.member_no} • {selectedMember.job_category} • {selectedMember.institution_name}
+                    <p className="text-[11px] text-slate-600 font-mono">
+                      <span className="font-bold text-blue-700">{selectedMember.member_no}</span>
+                      <span> • </span>
+                      <span>{selectedMember.institution_name || selectedMember.job_category || 'Anggota Perpustakaan'}</span>
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedMember(null)}
-                  className="text-xs text-rose-600 hover:text-rose-800 font-semibold cursor-pointer underline"
-                >
-                  Ganti
-                </button>
+                {!initialMember && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMember(null)}
+                    className="text-xs text-rose-700 hover:text-rose-900 font-semibold cursor-pointer underline"
+                  >
+                    Ganti
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
-                {isSearchingMember ? (
-                  <p className="p-3 text-center text-slate-400">Mencari anggota di database...</p>
-                ) : membersList.length === 0 ? (
-                  <p className="p-3 text-center text-slate-400">Tidak ada anggota yang cocok.</p>
-                ) : (
-                  membersList.map((m) => (
-                    <div
-                      key={m.id}
-                      onClick={() => setSelectedMember(m)}
-                      className="p-2.5 px-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
-                      <div>
-                        <p className="font-bold text-slate-800">{m.name}</p>
-                        <p className="text-[10px] text-slate-500 font-mono">
-                          {m.member_no} • {m.job_category} • {m.institution_name}
-                        </p>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={handleSearchMembers}
+                    placeholder="Cari nama atau no. anggota..."
+                    className="w-full pl-9.5 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
+                  />
+                </div>
+
+                <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+                  {isSearchingMember ? (
+                    <p className="p-3 text-center text-slate-400">Mencari anggota...</p>
+                  ) : membersList.length === 0 ? (
+                    <p className="p-3 text-center text-slate-400">Tidak ada anggota yang cocok.</p>
+                  ) : (
+                    membersList.map((m) => (
+                      <div
+                        key={m.id}
+                        onClick={() => setSelectedMember(m)}
+                        className="p-2.5 px-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+                      >
+                        <div>
+                          <p className="font-bold text-slate-800">{m.name}</p>
+                          <p className="text-[10px] text-slate-500 font-mono">{m.member_no} • {m.job_category}</p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-200">
+                          Pilih
+                        </span>
                       </div>
-                      <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                        Pilih
-                      </span>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* 2. Jenis Permasalahan */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">2. Jenis Pelanggaran / Masalah *</label>
-              <select
-                value={problemType}
-                onChange={(e) => handleProblemTypeChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-[#0B2256] focus:border-transparent outline-none"
-              >
-                <option value="BUKU_HILANG">Buku Hilang</option>
-                <option value="TELAT">Keterlambatan / Telat</option>
-                <option value="DENDA_MENUMPUK">Denda Menumpuk</option>
-                <option value="KOLEKSI_RUSAK">Koleksi Rusak Berat</option>
-                <option value="ANOMALI_IDENTITAS">Anomali NIK / Ganda</option>
-                <option value="LAINNYA">Pelanggaran Lainnya</option>
-              </select>
-            </div>
+          {/* 2. Jenis Masalah (Pilihan Cepat & Intuitif) */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              2. Pilih Jenis Permasalahan
+            </span>
 
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">Status Tindakan Penanganan</label>
-              <select
-                value={actionStatus}
-                onChange={(e) => setActionStatus(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-[#0B2256] focus:border-transparent outline-none"
-              >
-                <option value="AKSES_DIBEKUKAN">Akses Dibekukan</option>
-                <option value="PERINGATAN_2">Peringatan ke-2</option>
-                <option value="PERINGATAN_1">Peringatan ke-1</option>
-                <option value="DALAM_MEDIASI">Dalam Mediasi</option>
-                <option value="MENUNGGU_KONFIRMASI">Menunggu Konfirmasi</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {problemOptions.map((opt) => {
+                const isSelected = problemType === opt.id
+                const OptionIcon = opt.Icon
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => handleSelectProblemType(opt.id, opt.defaultNotes)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                      isSelected
+                        ? 'bg-rose-50/90 border-rose-400 text-rose-950 shadow-xs ring-1 ring-rose-400'
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="p-1 rounded-lg bg-slate-100 shrink-0 mt-0.5">
+                      <OptionIcon className={`w-4 h-4 ${opt.iconColor}`} />
+                    </div>
+                    <div className="space-y-0.5 flex-1">
+                      <p className="font-bold text-xs">{opt.label}</p>
+                      <p className="text-[10.5px] text-slate-500 leading-tight">{opt.desc}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* 3. Detail Koleksi Buku Terkait */}
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
-            <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+          {/* 3. Detail Buku / Koleksi Terkait (Opsional) */}
+          <div className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/70 space-y-2.5">
+            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-              Detail Buku / Eksemplar Terkait (Opsional)
+              Detail Buku Terkait (Jika Kasus Mengenai Buku)
             </span>
 
-            <div className="space-y-1">
-              <label className="text-slate-600 font-medium">Judul Buku / Subjek Kasus</label>
-              <input
-                type="text"
-                value={itemTitle}
-                onChange={(e) => setItemTitle(e.target.value)}
-                placeholder="Contoh: Pengantar Bioteknologi Tropis & Hayati Buleleng"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="sm:col-span-2 space-y-1">
+                <input
+                  type="text"
+                  value={itemTitle}
+                  onChange={(e) => setItemTitle(e.target.value)}
+                  placeholder="Judul buku (opsional)..."
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
+                />
+              </div>
               <div className="space-y-1">
-                <label className="text-slate-600 font-medium">Barcode / No Eksemplar</label>
                 <input
                   type="text"
                   value={itemBarcode}
                   onChange={(e) => setItemBarcode(e.target.value)}
-                  placeholder="Contoh: EK-01994"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-mono focus:ring-2 focus:ring-[#0B2256] outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-600 font-medium">No. Panggil Katalog</label>
-                <input
-                  type="text"
-                  value={itemCallNumber}
-                  onChange={(e) => setItemCallNumber(e.target.value)}
-                  placeholder="Contoh: 570.2/ARI/p"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-mono focus:ring-2 focus:ring-[#0B2256] outline-none"
+                  placeholder="Barcode (opsional)..."
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs font-mono focus:ring-2 focus:ring-[#0B2256] outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* 4. Keuangan / Tagihan Denda & Cicilan */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">Nominal Denda / Tagihan (Rp)</label>
-              <input
-                type="number"
-                min="0"
-                value={fineAmount}
-                onChange={(e) => setFineAmount(e.target.value)}
-                placeholder="Contoh: 145000"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-mono font-bold focus:ring-2 focus:ring-[#0B2256] outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">Nominal Telah Dicicil / Terbayar (Rp)</label>
-              <input
-                type="number"
-                min="0"
-                value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value)}
-                placeholder="Contoh: 50000"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-mono font-bold focus:ring-2 focus:ring-[#0B2256] outline-none"
-              />
-            </div>
-          </div>
-
-          {/* 5. Petugas & Subtext Keterangan */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">Petugas / Pustakawan Penanggung Jawab</label>
-              <input
-                type="text"
-                value={handledBy}
-                onChange={(e) => setHandledBy(e.target.value)}
-                placeholder="Nama petugas..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-800">Subtext Keterangan Status</label>
-              <input
-                type="text"
-                value={actionNotes}
-                onChange={(e) => setActionNotes(e.target.value)}
-                placeholder="Contoh: Menunggu buku pengganti..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
-              />
-            </div>
-          </div>
-
-          {/* 6. Deskripsi / Kronologi Kasus */}
+          {/* 4. Catatan Petugas / Sanksi Singkat */}
           <div className="space-y-1">
-            <label className="font-bold text-slate-800">Deskripsi / Kronologi Permasalahan</label>
-            <textarea
-              rows="3"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Tuliskan catatan kejadian, kondisi buku, atau alasan penangguhan hak pinjam..."
-              className="w-full p-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:ring-2 focus:ring-[#0B2256] outline-none"
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              3. Catatan Tindakan Sanksi
+            </label>
+            <input
+              type="text"
+              value={actionNotes}
+              onChange={(e) => setActionNotes(e.target.value)}
+              placeholder="Contoh: Menunggu buku pengganti..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 text-xs focus:ring-2 focus:ring-[#0B2256] outline-none"
             />
           </div>
 
+          {/* Info Bisnis Ringkas */}
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[11px] flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Setelah dipindahkan, anggota <b>langsung hilang</b> dari tabel Entri Anggota dan masuk ke menu <b>Keranjang Bermasalah</b>. Hak pinjam anggota akan ditangguhkan hingga kasus diselesaikan.
+            </p>
+          </div>
+
           {/* Footer Submit */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
@@ -419,9 +367,10 @@ export default function AddCaseModal({ isOpen, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 rounded-xl bg-[#0B2256] hover:bg-[#112d6e] text-white font-bold shadow-md shadow-blue-900/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-900/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
             >
-              {loading ? 'Menyimpan Kasus...' : 'Simpan ke Keranjang'}
+              <ShieldAlert className="w-4 h-4" />
+              <span>{loading ? 'Memindahkan...' : 'Pindahkan ke Keranjang Bermasalah'}</span>
             </button>
           </div>
         </form>

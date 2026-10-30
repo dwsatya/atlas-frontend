@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
 import {
   RotateCw,
   UserPlus,
@@ -25,6 +26,10 @@ import {
   FileSpreadsheet,
   RefreshCw,
   SlidersHorizontal,
+  BookX,
+  Clock,
+  UserX,
+  ShieldAlert,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
@@ -38,6 +43,8 @@ import PrintBillModal from './PrintBillModal'
 import WhatsAppNoticeModal from './WhatsAppNoticeModal'
 
 export default function AdminKeranjangBermasalah() {
+  const [searchParams] = useSearchParams()
+
   // State
   const [loading, setLoading] = useState(true)
   const [cases, setCases] = useState([])
@@ -45,10 +52,10 @@ export default function AdminKeranjangBermasalah() {
   const [toast, setToast] = useState(null)
 
   // Filters & Search
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [problemTypeFilter, setProblemTypeFilter] = useState('ALL')
   const [jobCategoryFilter, setJobCategoryFilter] = useState('ALL')
-  const [statusFilter, setStatusFilter] = useState('ALL') // 'ALL' | 'BELUM_SELESAI' | 'MENUNGGU_KONFIRMASI' | 'CICILAN' | 'AKSES_DIBEKUKAN' | 'SELESAI'
+  const [statusFilter, setStatusFilter] = useState('ALL') // 'ALL' | 'BELUM_SELESAI' | 'SELESAI'
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -205,9 +212,6 @@ export default function AdminKeranjangBermasalah() {
       'Judul Koleksi / Kasus',
       'No. Panggil',
       'Eksemplar',
-      'Tagihan Denda (Rp)',
-      'Telah Dicicil (Rp)',
-      'Sisa Tagihan (Rp)',
       'Tanggal Kasus',
       'Status Tindakan',
       'Keterangan Status',
@@ -217,9 +221,6 @@ export default function AdminKeranjangBermasalah() {
 
     const rows = cases.map((c, i) => {
       const m = c.member || {}
-      const fine = Number(c.fine_amount || 0)
-      const paid = Number(c.paid_amount || 0)
-      const rem = Math.max(0, fine - paid)
       return [
         i + 1,
         `"${m.member_no || '-'}"`,
@@ -232,11 +233,8 @@ export default function AdminKeranjangBermasalah() {
         `"${c.item_title || '-'}"`,
         `"${c.item_call_number || '-'}"`,
         `"${c.item_barcode || '-'}"`,
-        fine,
-        paid,
-        rem,
         `"${c.reported_date || '-'}"`,
-        `"${c.action_status_label || c.action_status}"`,
+        `"${c.is_resolved ? 'Selesai / Teratasi' : 'Akses Dibekukan'}"`,
         `"${c.action_notes || '-'}"`,
         `"${c.handled_by || '-'}"`,
         c.is_resolved ? '"Selesai"' : '"Belum Selesai"',
@@ -262,88 +260,51 @@ export default function AdminKeranjangBermasalah() {
     showToast('Rekap keranjang anggota bermasalah berhasil diunduh (CSV / Excel)!')
   }
 
-  // Get problem badge style
+  // Get problem badge style (Bebas Denda Uang)
   const renderProblemBadge = (cart) => {
     const type = cart.problem_type || ''
-    const fine = Number(cart.fine_amount || 0)
-    const paid = Number(cart.paid_amount || 0)
 
     if (type === 'BUKU_HILANG') {
       return (
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#991B1B] text-white tracking-wide shrink-0">
-            BUKU HILANG
-          </span>
-          <span className="text-[11px] font-bold text-rose-600 font-mono">
-            Tagihan Rp {fine.toLocaleString('id-ID')}
-          </span>
-        </div>
+        <span className="px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-[#991B1B] text-white tracking-wide shrink-0 inline-flex items-center gap-1.5 shadow-xs">
+          <BookX className="w-3.5 h-3.5 shrink-0" />
+          <span>BUKU HILANG</span>
+        </span>
       )
     }
 
-    if (type === 'TELAT') {
+    if (type === 'TELAT' || type === 'DENDA_MENUMPUK') {
       return (
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#78350F] text-white tracking-wide shrink-0">
-            {cart.late_duration_text ? cart.late_duration_text.toUpperCase() : 'TELAT'}
-          </span>
-          <span className="text-[11px] font-bold text-amber-700 font-mono">
-            Denda: Rp {fine.toLocaleString('id-ID')}
-          </span>
-        </div>
-      )
-    }
-
-    if (type === 'DENDA_MENUMPUK') {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#DC2626] text-white tracking-wide shrink-0">
-            DENDA MENUMPUK
-          </span>
-          <span className="text-[11px] font-bold text-rose-600 font-mono">
-            Tertunggak Rp {fine.toLocaleString('id-ID')}
-          </span>
-        </div>
+        <span className="px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-[#78350F] text-white tracking-wide shrink-0 inline-flex items-center gap-1.5 shadow-xs">
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <span>{cart.late_duration_text ? cart.late_duration_text.toUpperCase() : 'TERLAMBAT KEMBALI'}</span>
+        </span>
       )
     }
 
     if (type === 'KOLEKSI_RUSAK') {
       return (
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#713F12] text-white tracking-wide shrink-0">
-            KOLEKSI RUSAK BERAT
-          </span>
-          <span className="text-[11px] font-bold text-amber-900 font-mono">
-            Biaya Jilid/Ganti: Rp {fine.toLocaleString('id-ID')}
-          </span>
-        </div>
+        <span className="px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-[#713F12] text-white tracking-wide shrink-0 inline-flex items-center gap-1.5 shadow-xs">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>KOLEKSI RUSAK / CACAT</span>
+        </span>
       )
     }
 
     if (type === 'ANOMALI_IDENTITAS') {
       return (
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1D4ED8] text-white tracking-wide shrink-0">
-            ANOMALI NIK / GANDA
-          </span>
-          <span className="text-[11px] font-bold text-blue-700 font-mono">
-            2 Akun Terdaftar
-          </span>
-        </div>
+        <span className="px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-[#1D4ED8] text-white tracking-wide shrink-0 inline-flex items-center gap-1.5 shadow-xs">
+          <UserX className="w-3.5 h-3.5 shrink-0" />
+          <span>ANOMALI NIK / GANDA</span>
+        </span>
       )
     }
 
     return (
-      <div className="flex items-center gap-2">
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-white tracking-wide shrink-0">
-          {cart.problem_type_label || type}
-        </span>
-        {fine > 0 && (
-          <span className="text-[11px] font-bold text-slate-700 font-mono">
-            Tagihan: Rp {fine.toLocaleString('id-ID')}
-          </span>
-        )}
-      </div>
+      <span className="px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-slate-700 text-white tracking-wide shrink-0 inline-flex items-center gap-1.5 shadow-xs">
+        <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+        <span>{cart.problem_type_label || 'PELANGGARAN TATA TERTIB'}</span>
+      </span>
     )
   }
 
@@ -371,9 +332,8 @@ export default function AdminKeranjangBermasalah() {
     )
   }
 
-  // Get Action Status Pill
+  // Get Action Status Pill (Hanya Akses Dibekukan atau Selesai)
   const renderActionStatus = (cart) => {
-    const status = cart.action_status || ''
     const subtext = cart.action_notes || ''
 
     if (cart.is_resolved) {
@@ -388,58 +348,11 @@ export default function AdminKeranjangBermasalah() {
       )
     }
 
-    if (status === 'AKSES_DIBEKUKAN') {
-      return (
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-            Akses Dibekukan
-          </span>
-          {subtext && <p className="text-[10px] text-slate-500 mt-1">{subtext}</p>}
-        </div>
-      )
-    }
-
-    if (status === 'PERINGATAN_2') {
-      return (
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EEF2FF] text-[#3730A3] border border-[#C7D2FE]">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-            Peringatan ke-2
-          </span>
-          {subtext && <p className="text-[10px] text-slate-500 mt-1">{subtext}</p>}
-        </div>
-      )
-    }
-
-    if (status === 'DALAM_MEDIASI') {
-      return (
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            Dalam Mediasi
-          </span>
-          {subtext && <p className="text-[10px] text-slate-500 mt-1">{subtext}</p>}
-        </div>
-      )
-    }
-
-    if (status === 'MENUNGGU_KONFIRMASI') {
-      return (
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-            Menunggu Konfirmasi
-          </span>
-          {subtext && <p className="text-[10px] text-slate-500 mt-1">{subtext}</p>}
-        </div>
-      )
-    }
-
     return (
       <div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
-          {cart.action_status_label || status}
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+          Akses Dibekukan
         </span>
         {subtext && <p className="text-[10px] text-slate-500 mt-1">{subtext}</p>}
       </div>
@@ -476,9 +389,9 @@ export default function AdminKeranjangBermasalah() {
               Keranjang Anggota Bermasalah
             </h1>
             <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
-              Daftar rekaman anggota perpustakaan yang ditangguhkan hak pinjamnya karena
-              keterlambatan berulang, denda tertunggak, buku hilang/rusak, atau anomali data
-              identitas sirkulasi DAPD Kabupaten Buleleng.
+              Daftar rekaman anggota perpustakaan yang ditangguhkan hak pinjamnya (Akses Dibekukan)
+              karena keterlambatan pengembalian buku, buku hilang/rusak, atau pelanggaran sirkulasi
+              DAPD Kabupaten Buleleng.
             </p>
           </div>
 
@@ -637,13 +550,12 @@ export default function AdminKeranjangBermasalah() {
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:ring-2 focus:ring-[#0B2256] focus:border-transparent outline-none transition-all"
               >
-                <option value="ALL">Semua Jenis Masalah ({stats?.total_cases ?? 28})</option>
-                <option value="BUKU_HILANG">Buku Hilang</option>
-                <option value="TELAT">Keterlambatan / Telat</option>
-                <option value="DENDA_MENUMPUK">Denda Menumpuk</option>
-                <option value="KOLEKSI_RUSAK">Koleksi Rusak Berat</option>
+                <option value="ALL">Semua Jenis Masalah ({stats?.total_cases ?? 0})</option>
+                <option value="BUKU_HILANG">Buku Hilang (Menunggu Pengganti)</option>
+                <option value="TELAT">Keterlambatan Pengembalian</option>
+                <option value="KOLEKSI_RUSAK">Koleksi Rusak / Cacat</option>
                 <option value="ANOMALI_IDENTITAS">Anomali NIK / Ganda</option>
-                <option value="LAINNYA">Pelanggaran Lainnya</option>
+                <option value="LAINNYA">Pelanggaran Tata Tertib</option>
               </select>
             </div>
 
@@ -679,13 +591,13 @@ export default function AdminKeranjangBermasalah() {
                   setStatusFilter('ALL')
                   setCurrentPage(1)
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   statusFilter === 'ALL'
                     ? 'bg-[#0B2256] text-white shadow-xs'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                 }`}
               >
-                Semua ({stats?.total_cases ?? 28})
+                Semua ({stats?.total_cases ?? 0})
               </button>
 
               <button
@@ -694,58 +606,30 @@ export default function AdminKeranjangBermasalah() {
                   setStatusFilter('BELUM_SELESAI')
                   setCurrentPage(1)
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  statusFilter === 'BELUM_SELESAI'
-                    ? 'bg-[#0B2256] text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                Belum Selesai ({stats?.status_breakdown?.unresolved ?? 19})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter('MENUNGGU_KONFIRMASI')
-                  setCurrentPage(1)
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  statusFilter === 'MENUNGGU_KONFIRMASI'
-                    ? 'bg-[#0B2256] text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                Menunggu Konfirmasi ({stats?.status_breakdown?.awaiting_confirmation ?? 6})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter('CICILAN')
-                  setCurrentPage(1)
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  statusFilter === 'CICILAN'
-                    ? 'bg-[#0B2256] text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                Cicilan Ganti Rugi ({stats?.status_breakdown?.installment ?? 3})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter('AKSES_DIBEKUKAN')
-                  setCurrentPage(1)
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  statusFilter === 'AKSES_DIBEKUKAN'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  statusFilter === 'BELUM_SELESAI' || statusFilter === 'AKSES_DIBEKUKAN'
                     ? 'bg-rose-700 text-white shadow-xs'
-                    : 'bg-rose-50 hover:bg-rose-100 text-rose-700'
+                    : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60'
                 }`}
               >
-                Akses Dibekukan ({stats?.status_breakdown?.suspended ?? 0})
+                <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'BELUM_SELESAI' || statusFilter === 'AKSES_DIBEKUKAN' ? 'bg-white' : 'bg-rose-500'}`} />
+                Akses Dibekukan ({stats?.status_breakdown?.unresolved ?? 0})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('SELESAI')
+                  setCurrentPage(1)
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  statusFilter === 'SELESAI'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'SELESAI' ? 'bg-white' : 'bg-emerald-500'}`} />
+                Kasus Selesai / Teratasi ({stats?.status_breakdown?.resolved ?? 0})
               </button>
             </div>
 
@@ -796,9 +680,8 @@ export default function AdminKeranjangBermasalah() {
                 className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-medium outline-none"
               >
                 <option value="">-- Pilih Tindakan Massal --</option>
-                <option value="FREEZE">Bekukan Hak Pinjam Terpilih</option>
-                <option value="UNFREEZE">Buka Blokir Akses Terpilih</option>
-                <option value="RESOLVE">Tandai Kasus Selesai (Resolve)</option>
+                <option value="FREEZE">Bekukan Hak Pinjam (Akses Dibekukan)</option>
+                <option value="RESOLVE">Selesaikan Kasus &amp; Pulihkan ke Entri Anggota</option>
                 <option value="DELETE">Hapus Kasus Terpilih</option>
               </select>
               <button
@@ -831,9 +714,10 @@ export default function AdminKeranjangBermasalah() {
                 if (cases.length > 0) setActiveCaseForPrint(cases[0])
               }}
               className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+              title="Cetak Berita Acara Pembekuan Akses Sirkulasi"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Cetak Tagihan</span>
+              <span>Cetak Berita Acara</span>
             </button>
 
             <button
@@ -1035,7 +919,7 @@ export default function AdminKeranjangBermasalah() {
                               type="button"
                               onClick={() => setActiveCaseForPrint(cart)}
                               className="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-[#0B2256] hover:text-white border border-blue-200 transition-colors cursor-pointer"
-                              title="Cetak Berita Acara & Tagihan Resmi"
+                              title="Cetak Berita Acara Pembekuan Akses Sirkulasi"
                             >
                               <Printer className="w-3.5 h-3.5" />
                             </button>
